@@ -7,6 +7,8 @@ from scipy.stats import zscore, gaussian_kde
 from sklearn.metrics import r2_score
 from sklearn.linear_model import LinearRegression
 
+from scipy.stats import spearmanr, pearsonr
+
 from . import plot as pl
 
 #=================================================================================================#
@@ -214,7 +216,7 @@ def scatter_residuals(mat, lab, res_mat, res_lab, IC, res_IC, pval_IC, i, indice
     fig.suptitle(f'stim. chan. {indices_[i]}',y=1.3)
 
     if outf:
-        ax.savefig(outf, bbox_inches='tight')
+        plt.savefig(outf, bbox_inches='tight')
         if not show_plot:
             plt.close()
     else:
