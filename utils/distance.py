@@ -54,7 +54,8 @@ def remove_outliers_quantiles(x, y, q=0.01):
     return x[mask], y[mask]
 
 def fit_and_plot(x, y, fit_type="exp", rm_quantiles=True, q=0.02, z_thresh=5, xlabel='eucl. distance (mm)', ylabel='TE',
-                 cmap=None, edgecolor=None, linewidths=0.2, dotsize=10, dotcolor='tab:blue', ax=None, plot=True):
+                 cmap=None, edgecolor=None, linewidths=0.2, dotsize=10, dotcolor='tab:blue', plot=True, ax=None, 
+                 outf : str = None, show_plot = True):
 
     # clean data from outliers
     if rm_quantiles:
@@ -147,10 +148,75 @@ def fit_and_plot(x, y, fit_type="exp", rm_quantiles=True, q=0.02, z_thresh=5, xl
 
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.9), frameon=False)
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.4), frameon=False)
         if cmap:
             pl.set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, DIM = DIM)
         else:
             pl.set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = None, DIM = DIM)
 
+        if ax is None:
+            if outf:
+                ax.savefig(outf, bbox_inches='tight')
+                if not show_plot:
+                    plt.close()
+            else:
+                plt.show()
+                
     return popt, r2, aic, bic
+
+
+def scatter_residuals(mat, lab, res_mat, res_lab, IC, res_IC, pval_IC, i, indices_, 
+                      reg_line=False, ymin:float=None, ymax:float=None, outf : str = None, show_plot = True):
+
+    ec_v  = mat[i]
+    ic_v  = IC[i]
+    res_e = res_mat[i]
+    res_i = res_IC[i]
+    p_IC  = pval_IC[i]
+    
+    cols_  = ['#E93423','#3333F6','#999AF8','#030062']
+
+    fig,axs = plt.subplots(1,2,figsize=(13,4))
+    
+    ax=axs[0]
+    ax.scatter(ic_v[p_IC>=0.05],ec_v[p_IC>=0.05],s=150,c=cols_[2],edgecolor='white')
+    ax.scatter(ic_v[p_IC<0.05], ec_v[p_IC<0.05], s=150,c=cols_[0],edgecolor='white')
+
+    if reg_line:
+        sns.regplot(x=ic_v, y=ec_v, scatter=False, ax=ax, line_kws=dict(color=colorz[4]))
+    
+    pl.set_format(ax=ax)
+    ax.set_xlabel('IC')
+    ax.set_ylabel(lab)
+    ax.set_xlim(0,1)
+    ax.set_title(fr'$\rho_{{sp}}={np.round(spearmanr(ec_v,ic_v)[0],2)}$'+
+                 '\n'+fr'$\rho_{{p}}={np.round(pearsonr(ec_v,ic_v)[0],2)}$',y=1.1)
+    
+    ax=axs[1]
+    ax.scatter(res_i[p_IC>=0.05],res_e[p_IC>=0.05],s=150,c=cols_[2],edgecolor='white')
+    ax.scatter(res_i[p_IC<0.05], res_e[p_IC<0.05], s=150,c=cols_[0],edgecolor='white')
+
+    if reg_line:
+        sns.regplot(x=res_i, y=res_e, scatter=False, ax=ax, line_kws=dict(color=colorz[4]))
+    
+    pl.set_format(ax=ax)
+    ax.set_xlabel('$\epsilon_{IC}$')
+
+    ax.set_ylabel(f'$\epsilon_{{{lab}}}$')
+    if ymin!=None and ymax!=None:
+        ax.set_ylim(ymin,ymax)
+    ax.set_title(fr'$\rho_{{sp}}={np.round(spearmanr(res_e,res_i)[0],2)}$'+
+                 '\n'+fr'$\rho_{{p}}={np.round(pearsonr(res_e,res_i)[0],2)}$',y=1.1)
+    
+    #-------------------------------------------------------------------------------------------#
+    
+    fig.subplots_adjust(wspace=0.5, hspace=0.7)
+    fig.suptitle(f'stim. chan. {indices_[i]}',y=1.3)
+
+    if outf:
+        ax.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
+    else:
+        plt.show()
+        
