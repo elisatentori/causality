@@ -14,15 +14,19 @@ Code supporting <a href="https://www.biorxiv.org/content/10.1101/2025.04.29.6513
 <a href="https://github.com/elisatentori/causality/blob/main/results1.ipynb" target="_blank"> results1</a>: reproduce the main results shared in the manuscripts. 
 <ul>
 <li>Contstruct and characterize the perturbome (via Interventional Connectivity).</li>
-<li>Apply the developed Effective Connectivity (EC) framework to <br>
-  –  evaluate the predictive power of EC; <br>
-  –  assess EC validity as a proxy of causal influence.
+<li>Apply the developed Effective Connectivity (EC) framework to 
+  <ul>
+  <li> evaluate the predictive power of EC; </li>
+  <li>  assess EC validity as a proxy of causal influence.</li>
+  </ul>
 </li>
 </ul>
 
 ## Dependencies
-
-<a href="https://github.com/elisatentori/EC_calculation" target="_blank"> EC_calculation</a>: computing Effective Connectivity metrics (Delayed Transfer Entropy, Signed-Cross Correlation, Cross-Covariance) from spike-trains. Performing significance jittering test.
+<ul>
+<li><a href="https://github.com/elisatentori/EC_calculation" target="_blank"> EC_calculation</a>: <br>
+  computing Effective Connectivity metrics (Delayed Transfer Entropy, Signed-Cross Correlation, Cross-Covariance) from spike-trains. Performing significance jittering test. </li>
+</ul>
 
 ## utils
 
