@@ -11,15 +11,19 @@ Code supporting <a href="https://www.biorxiv.org/content/10.1101/2025.04.29.6513
 
 ## Main scripts
 
-<a href="https://github.com/elisatentori/causality/blob/main/results1.ipynb" target="_blank"> results1</a>: reproduce the main results shared in the manuscripts. 
 <ul>
-<li>Contstruct and characterize the perturbome (via Interventional Connectivity).</li>
-<li>Apply the developed Effective Connectivity (EC) framework to 
-  <ul>
-  <li> evaluate the predictive power of EC; </li>
-  <li>  assess EC validity as a proxy of causal influence.</li>
-  </ul>
-</li>
+  <li>
+    <a href="https://github.com/elisatentori/causality/blob/main/results1.ipynb" target="_blank"> results1</a>: reproduce the main results shared in the manuscripts. 
+    <ul>
+      <li>Contstruct and characterize the perturbome (via Interventional Connectivity).</li>
+      <li>Apply the developed Effective Connectivity (EC) framework to 
+        <ul>
+          <li> evaluate the predictive power of EC; </li>
+          <li>  assess EC validity as a proxy of causal influence.</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
 </ul>
 
 ## Dependencies
