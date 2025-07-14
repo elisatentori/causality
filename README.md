@@ -54,3 +54,9 @@ Stored in <a href="https://github.com/elisatentori/causality/tree/main/Data_MaxO
 ## python dependencies
 
 numpy, matplotlib, scipy, sklearn, statsmodels, joblib, networkx, seaborn
+
+
+
+<br><br><br>
+All rights reserved. Copyright (c) 2025, University of Padua, Italy <br>
+Author: Elisa Tentori. LiPh Lab - NeuroChip Lab, University of Padua, Italy
