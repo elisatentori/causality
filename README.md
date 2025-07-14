@@ -4,9 +4,11 @@ Code supporting <a href="https://www.biorxiv.org/content/10.1101/2025.04.29.6513
 
 ## Data shared
 
+30-minutes spontaneous activity of cultured neurons from the hippocampus of rat embryo (DIV 20-30) plated on <a href="https://www.mxwbio.com/products/maxone-mea-system-microelectrode-array/" target="_blank"> MaxOne Single-Well HD-MEA System.
+
 <ul>
-  <li> <a href="https://github.com/elisatentori/causality/tree/main/Data_MaxOne/Culture1REC1/Data" target="_blank"> Data_MaxOne/Culture1REC1/Data </a>: sample 1 <br> 30-minutes spontaneous activity of cultured neurons from the hippocampus of rat embryo (DIV 20-30) plated on <a href="https://www.mxwbio.com/products/maxone-mea-system-microelectrode-array/" target="_blank"> MaxOne Single-Well HD-MEA System </a> </li>
-  <li> <a href="https://github.com/elisatentori/causality/tree/main/Data_MaxOne/Culture2REC1/Data" target="_blank"> Data_MaxOne/Culture2REC1/Data </a>: sample 2 <br> 30-minutes spontaneous activity of cultured neurons from the hippocampus of rat embryo (DIV 20-30) </li>
+  <li> <a href="https://github.com/elisatentori/causality/tree/main/Data_MaxOne/Culture1REC1/Data" target="_blank"> Data_MaxOne/Culture1REC1/Data </a>: sample 1  </li>
+  <li> <a href="https://github.com/elisatentori/causality/tree/main/Data_MaxOne/Culture2REC1/Data" target="_blank"> Data_MaxOne/Culture2REC1/Data </a>: sample 2  </li>
 </ul>
 
 ## Main scripts
