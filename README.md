@@ -60,3 +60,5 @@ numpy, matplotlib, scipy, sklearn, statsmodels, joblib, networkx, seaborn
 <br><br><br>
 All rights reserved. Copyright (c) 2025, University of Padua, Italy <br>
 Author: Elisa Tentori. LiPh Lab - NeuroChip Lab, University of Padua, Italy
+
+If you use the package, please cite <a href="https://www.biorxiv.org/content/10.1101/2025.04.29.651327v2" target="_blank">"Spontaneous Dynamics Predict the Effects of Targeted Intervention in Hippocampal Neuronal Cultures" </a>, bioRxiv
