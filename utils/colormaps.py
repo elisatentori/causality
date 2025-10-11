@@ -25,6 +25,19 @@ def generate_continuous_cmap(start_color, end_color):
 
 
 # ================================================================================================================ #
+# - - - -           discrete cmap           - - - - #
+def generate_palette(start_color, end_color, num_steps):
+    
+    start_rgb = np.array(mcolors.hex2color(start_color))
+    end_rgb = np.array(mcolors.hex2color(end_color))
+
+    palette = [mcolors.to_hex(start_rgb + (end_rgb - start_rgb) * (i / (num_steps - 1)))
+               for i in range(num_steps)]
+
+    return palette
+
+
+# ================================================================================================================ #
 # - - - -           hotcold cmap           - - - - #
 
 

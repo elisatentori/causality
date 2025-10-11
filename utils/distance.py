@@ -34,6 +34,53 @@ plt.rcParams.update({
 })
 #=================================================================================================#
 
+#=================================================================================================#
+# Axes formatter for plots 
+
+def set_format(ax, axis_ticks = 'both', pwr_x_min=-1, pwr_x_max=1, pwr_y_min=-1, pwr_y_max=1,  cbar = None, pwr_cbar_min=-1, pwr_cbar_max=1,  DIM = 30):
+    
+    import seaborn as sns
+    
+    sns.despine(ax=ax, trim=False)
+    ax.set_facecolor('none')
+    
+    # - - -  TICKS
+    ax.tick_params(axis=axis_ticks, which='major', labelsize=DIM)
+    
+    # - - -  FORMATTER x axis
+    formatter_x = ScalarFormatter(useMathText=True)   
+    formatter_x.set_scientific(True)
+    formatter_x.set_powerlimits((pwr_x_min, pwr_x_max))
+    ax.xaxis.set_major_formatter(formatter_x)
+    ax.xaxis.offsetText.set_fontsize(DIM-10)
+    
+    from matplotlib.transforms import ScaledTranslation
+    dx, dy = 15/72, 15/72
+    offset = ScaledTranslation(dx, dy, ax.figure.dpi_scale_trans)
+    ax.xaxis.offsetText.set_transform(ax.xaxis.offsetText.get_transform() + offset)
+
+    # - - -  FORMATTER y axis
+    formatter_y = ScalarFormatter(useMathText=True)    
+    formatter_y.set_scientific(True) 
+    formatter_y.set_powerlimits((pwr_y_min, pwr_y_max))
+    ax.yaxis.set_major_formatter(formatter_y);
+    ax.yaxis.offsetText.set_fontsize(DIM-10)
+    
+    if cbar:
+        # - - -  FORMATTER cbar
+        formatter_cbar = ScalarFormatter(useMathText=True)   
+        formatter_cbar.set_scientific(True)
+        formatter_cbar.set_powerlimits((pwr_cbar_min, pwr_cbar_max))
+        cbar.ax.yaxis.set_major_formatter(formatter_cbar); 
+        cbar.ax.yaxis.offsetText.set_fontsize(DIM-10)
+        cbar.ax.xaxis.set_major_formatter(formatter_cbar); 
+        cbar.ax.xaxis.offsetText.set_fontsize(DIM-10)
+        
+        # Move the offset text to the top of the colorbar
+        dx, dy = 0.8, 0.3  # Adjust dy for vertical and dx for horizontal shifts
+        cbar_offset = ScaledTranslation(dx, dy, cbar.ax.figure.dpi_scale_trans)
+        cbar.ax.yaxis.offsetText.set_transform(cbar.ax.yaxis.offsetText.get_transform() + cbar_offset)
+        
 # Models
 def exp_func(x, a, b, c):
     return a * np.exp(-b * x)+ c
@@ -152,9 +199,9 @@ def fit_and_plot(x, y, fit_type="exp", rm_quantiles=True, q=0.02, z_thresh=5, xl
         ax.set_ylabel(ylabel)
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.4), frameon=False)
         if cmap:
-            pl.set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, DIM = DIM)
+            set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, DIM = DIM)
         else:
-            pl.set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = None, DIM = DIM)
+            set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = None, DIM = DIM)
 
         if ax is None:
             if outf:
@@ -187,7 +234,7 @@ def scatter_residuals(mat, lab, res_mat, res_lab, IC, res_IC, pval_IC, i, indice
     if reg_line:
         sns.regplot(x=ic_v, y=ec_v, scatter=False, ax=ax, line_kws=dict(color=colorz[4]))
     
-    pl.set_format(ax=ax)
+    set_format(ax=ax)
     ax.set_xlabel('IC')
     ax.set_ylabel(lab)
     ax.set_xlim(0,1)
@@ -201,7 +248,7 @@ def scatter_residuals(mat, lab, res_mat, res_lab, IC, res_IC, pval_IC, i, indice
     if reg_line:
         sns.regplot(x=res_i, y=res_e, scatter=False, ax=ax, line_kws=dict(color=colorz[4]))
     
-    pl.set_format(ax=ax)
+    set_format(ax=ax)
     ax.set_xlabel('$\epsilon_{IC}$')
 
     ax.set_ylabel(f'$\epsilon_{{{lab}}}$')

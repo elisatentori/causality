@@ -12,8 +12,8 @@ import seaborn as sns
 import numpy as np
 
 
-from . import load_EC as lec
-from . import correlations as cc
+#import load_EC as lec
+#import correlations as cc
 
 #=================================================================================================#
 from matplotlib import font_manager, rcParams
@@ -533,8 +533,8 @@ def plot_binned_mean(C_mat, D_mat, xlabel='eucl. dist.(mm)', ylabel='IC', color=
         bin_mask      = (D_v >= bins[j]) & (D_v < bins[j+1])
         y_vals_in_bin = C_v[bin_mask]
         if len(y_vals_in_bin) > 0:
-            y_means[j] = np.mean(y_vals_in_bin)
-            y_stds[j]  = np.std(y_vals_in_bin)
+            y_means[j] = np.mean(y_vals_in_bin[y_vals_in_bin!=0])
+            y_stds[j]  = np.std(y_vals_in_bin[y_vals_in_bin!=0])
         else:
             y_means[j] = np.nan
             y_stds[j]  = np.nan

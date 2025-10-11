@@ -6,7 +6,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.stats import spearmanr, pearsonr
 
 from . import colormaps as maps
-from . import plot as pl
+#from . import plot as pl
 
 #=================================================================================================#
 from matplotlib import font_manager, rcParams
@@ -34,6 +34,54 @@ plt.rcParams.update({
 coldhot_cmap   = maps.create_cmaphot()
 coldhot_cmap_r = maps.create_cmaphot_r()
 
+
+#=================================================================================================#
+# Axes formatter for plots 
+
+def set_format(ax, axis_ticks = 'both', pwr_x_min=-1, pwr_x_max=1, pwr_y_min=-1, pwr_y_max=1,  cbar = None, pwr_cbar_min=-1, pwr_cbar_max=1,  DIM = 30):
+    
+    import seaborn as sns
+    
+    sns.despine(ax=ax, trim=False)
+    ax.set_facecolor('none')
+    
+    # - - -  TICKS
+    ax.tick_params(axis=axis_ticks, which='major', labelsize=DIM)
+    
+    # - - -  FORMATTER x axis
+    formatter_x = ScalarFormatter(useMathText=True)   
+    formatter_x.set_scientific(True)
+    formatter_x.set_powerlimits((pwr_x_min, pwr_x_max))
+    ax.xaxis.set_major_formatter(formatter_x)
+    ax.xaxis.offsetText.set_fontsize(DIM-10)
+    
+    from matplotlib.transforms import ScaledTranslation
+    dx, dy = 15/72, 15/72
+    offset = ScaledTranslation(dx, dy, ax.figure.dpi_scale_trans)
+    ax.xaxis.offsetText.set_transform(ax.xaxis.offsetText.get_transform() + offset)
+
+    # - - -  FORMATTER y axis
+    formatter_y = ScalarFormatter(useMathText=True)    
+    formatter_y.set_scientific(True) 
+    formatter_y.set_powerlimits((pwr_y_min, pwr_y_max))
+    ax.yaxis.set_major_formatter(formatter_y);
+    ax.yaxis.offsetText.set_fontsize(DIM-10)
+    
+    if cbar:
+        # - - -  FORMATTER cbar
+        formatter_cbar = ScalarFormatter(useMathText=True)   
+        formatter_cbar.set_scientific(True)
+        formatter_cbar.set_powerlimits((pwr_cbar_min, pwr_cbar_max))
+        cbar.ax.yaxis.set_major_formatter(formatter_cbar); 
+        cbar.ax.yaxis.offsetText.set_fontsize(DIM-10)
+        cbar.ax.xaxis.set_major_formatter(formatter_cbar); 
+        cbar.ax.xaxis.offsetText.set_fontsize(DIM-10)
+        
+        # Move the offset text to the top of the colorbar
+        dx, dy = 0.8, 0.3  # Adjust dy for vertical and dx for horizontal shifts
+        cbar_offset = ScaledTranslation(dx, dy, cbar.ax.figure.dpi_scale_trans)
+        cbar.ax.yaxis.offsetText.set_transform(cbar.ax.yaxis.offsetText.get_transform() + cbar_offset)
+        
 #=================================================================================================#
 # Accuracy of EC in reconstructing the perturbome (IC) [for fixed stimulation/source channel] :
 # correlation (pearson/spearman) betw the rows of EC matrices (stored in a list) 
@@ -62,6 +110,7 @@ def correlate_source_fixed(meas_mat, IC_mat, exclude_zeros=False, pearson=False)
                 else:
                     correlation[idx_meas,i], p_value[idx_meas,i] = pearsonr(IC_mat[i,:], EC_v[i,:])
     return correlation, p_value
+
 
 #=====================================#
 # Accuracy of EC in reconstructing the whole perturbome (IC) or its hubs:
@@ -109,9 +158,9 @@ def corrMeasures_outStr(meas_mat, IC_measure, indices):
 
     return Scorr, Pcorr
 
+
 #=================================================================================================#
 # PLOTS
-
 
 def plot_correlations(corr_mat, label_list, ylabel=r'$\rho_{sp}(EC,IC)$', figsize=(8, 6), ax=None, outf: str = None, show_plot: bool = False):
     #colors_dl = ['#255D93', '#5FA6D6', '#B02106', '#F24D33', '#2C2C2C', '#787878']
@@ -135,7 +184,7 @@ def plot_correlations(corr_mat, label_list, ylabel=r'$\rho_{sp}(EC,IC)$', figsiz
 
     ax.legend(fontsize=DIM-5, loc='lower right', ncol=3, handlelength=1)
     
-    pl.set_format(ax, pwr_x_max=2,  DIM = DIM)
+    set_format(ax, pwr_x_max=2,  DIM = DIM)
     
     if ax is None:
         if outf:
@@ -145,6 +194,7 @@ def plot_correlations(corr_mat, label_list, ylabel=r'$\rho_{sp}(EC,IC)$', figsiz
         else:
             plt.show()
 
+            
 #=========================================================================================================#
 # accuracy of EC in reconstructing the perturbome [for every fixed stim. channel.]
 
@@ -269,7 +319,7 @@ def plot_correlations_cv(corr_mat, corr_mat2, corr_mat3, label, color='blue', pe
     
     ax.legend(fontsize=DIM-5, ncol=1, handlelength=1)
     ax.set_xticks([])
-    pl.set_format(ax, axis_ticks = 'both', DIM = DIM)
+    set_format(ax, axis_ticks = 'both', DIM = DIM)
     
     if ax is None:
         if outf:
@@ -278,3 +328,5 @@ def plot_correlations_cv(corr_mat, corr_mat2, corr_mat3, label, color='blue', pe
                 plt.close()
         else:
             plt.show()
+
+#=========================================================================================================#
