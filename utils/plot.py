@@ -353,10 +353,71 @@ def plot_scatter(ic_mat, ec_mat, zeroExp=-11, log=False, xlabel='IC', ylabel='EC
         
     ax.set_xlabel(xlabel); ax.set_ylabel(ylabel);
 
+            
+def plot_scatter(ic_mat, ec_mat, zeroExp=-11, log=False, xlabel='IC', ylabel='EC', title=None, dotsize=0.1, 
+                 cmap=None, edgecolor=None, linewidths=0.2, regcolor='tab:red', dotcolor='tab:blue', reg_line=True, show_corr=True,
+                 ymin=None, ymax=None, ax=None, outf=None, show_plot=False):
+    import seaborn as sns
+    from scipy.stats import pearsonr, spearmanr, gaussian_kde
+    ic_vec = ic_mat.flatten()
+    if log:
+        ec_vec = np.log10(ec_mat.flatten()+10**zeroExp)
+        x=ic_vec[ec_mat.flatten()!=0]
+        y=ec_vec[ec_mat.flatten()!=0]
+    else:
+        ec_vec = ec_mat.flatten()
+        x=ic_vec
+        y=ec_vec
+    
+    if ax is None:
+        fig,ax = plt.subplots()
+    else:
+        fig = ax.get_figure() 
+        
     if cmap:
-        set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, DIM = DIM)
+        xy = np.vstack([ic_vec, ec_vec])
+        z = gaussian_kde(xy)(xy)
+        vmax = np.max(z); vmin = vmax; 
+        # Plot with density-based color
+        scatter = ax.scatter(ic_vec, ec_vec, c=z, s=dotsize, alpha=0.7, edgecolor=edgecolor, linewidths=linewidths, cmap=cmap)
+        cbar = plt.colorbar(scatter, ax=ax, shrink=0.5)
+        cbar.set_label(r'density', fontsize=DIM)
+        cbar.ax.tick_params(labelsize=DIM)
+    else:
+        ax.scatter(ic_vec, ec_vec, s=dotsize, c=dotcolor, edgecolor=edgecolor, linewidths=linewidths, alpha=0.7)
+
+    if reg_line:
+        sns.regplot(x=x, y=y, ax=ax, scatter=False, color=regcolor, line_kws={'linewidth': 1})
+    
+    if show_corr:
+        cp = np.round(pearsonr(x,y)[0],2)
+        cs = np.round(spearmanr(x,y)[0],2)
+        if title:
+            ax.set_title(title+'\n'+rf'$\rho_p={cp}$'+'\n'+rf'$\rho_{{sp}}={cs}$')
+        else:
+            ax.set_title(rf'$\rho_p={cp}$'+'\n'+rf'$\rho_{{sp}}={cs}$')
+    else:
+        if title:
+            ax.set_title(title)
+        
+    if ymin is not None and ymax is not None:
+        ax.set_ylim(ymin,ymax)
+        
+    ax.set_xlabel(xlabel); ax.set_ylabel(ylabel);
+
+    if cmap:
+        set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, pwr_cbar_min=-2, pwr_cbar_max=2,  DIM = DIM)
     else:
         set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = None, DIM = DIM)
+    
+    if ax is None:
+        if outf:
+            ax.savefig(outf, bbox_inches='tight')
+            if not show_plot:
+                plt.close()
+        else:
+            plt.show()
+
     
     if ax is None:
         if outf:
@@ -511,6 +572,7 @@ def plot_bars(mat1, mat2, label1, label2, mat2_pval, color, colBar='black',doubl
 
 #-------------------------------------------------------------------------------------------------#
 # <connectivity> as a function of distance
+# modified: 13 sept 2025 – bug correction sem
 
 def plot_binned_mean(C_mat, D_mat, xlabel='eucl. dist.(mm)', ylabel='IC', color='tab:green', N_bins=10, linewidths=0.2,
                      xmin=0, xmax=None, ymin=0, ymax=None, figsize=(4,4), ax=None, outf=None, show_plot=False):
@@ -528,31 +590,36 @@ def plot_binned_mean(C_mat, D_mat, xlabel='eucl. dist.(mm)', ylabel='IC', color=
     bin_centers = 0.5 * (bins[1:] + bins[:-1])
     y_means = np.zeros(N_bins)
     y_stds  = np.zeros(N_bins)
-
+    y_counts = np.zeros(N_bins, dtype=int) # counting n samples in each bin (for sem)
+    
     for j in range(N_bins):
         bin_mask      = (D_v >= bins[j]) & (D_v < bins[j+1])
         y_vals_in_bin = C_v[bin_mask]
+        n = y_vals_in_bin.size
+        y_counts[j] = n
         if len(y_vals_in_bin) > 0:
-            y_means[j] = np.mean(y_vals_in_bin[y_vals_in_bin!=0])
-            y_stds[j]  = np.std(y_vals_in_bin[y_vals_in_bin!=0])
+            y_means[j] = np.mean(y_vals_in_bin)
+            y_stds[j]  = np.std(y_vals_in_bin, ddof=1)
         else:
             y_means[j] = np.nan
             y_stds[j]  = np.nan
     
-    y_stds /= np.sqrt(len(y_means))  # s.e.m.
+    #y_stds /= np.sqrt(len(y_means))  # s.e.m.
+    y_sems = np.divide(y_stds, np.sqrt(y_counts), out=np.full_like(y_stds, np.nan), where=y_counts>0)
 
     # Plot error bars instead of scatter
-    ax.fill_between(bin_centers, y_means-y_stds, y_means+y_stds,color=color, alpha=0.3)
-    ax.plot(bin_centers, y_means,'-', color=color,lw=4)#, edgecolor=edgecolor,markersize=10)
-    ax.errorbar(bin_centers, y_means, yerr=y_stds, fmt='o', color=color, ecolor=color, elinewidth=linewidths, capsize=4)
-
+    #ax.fill_between(bin_centers, y_means-y_stds,  y_means+y_stds,    color=color, alpha=0.3)
+    ax.fill_between(bin_centers, y_means - y_sems, y_means + y_sems, color=color, alpha=0.3)
+    ax.plot(bin_centers, y_means,'-', color=color, lw=4)#, edgecolor=edgecolor,markersize=10)
+    ax.errorbar(bin_centers, y_means, yerr=y_sems, fmt='o', color=color, ecolor=color, elinewidth=linewidths, capsize=4)
+    
     ax.set_ylabel('$<$'+ylabel+'$>$', fontsize=DIM)
     ax.set_xlabel(xlabel, fontsize=DIM)
 
     if xmax:
         ax.set_xlim(xmin, xmax)
     if ymax:
-        ax.set_ylim(xmax, ymax)
+        ax.set_ylim(ymin, ymax)
 
     set_format(ax, axis_ticks='both', cbar=None, DIM=DIM)
 

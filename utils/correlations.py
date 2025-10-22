@@ -2,6 +2,9 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.ticker import ScalarFormatter
+import matplotlib.colors as mcolors
+from matplotlib.colors import LinearSegmentedColormap, ListedColormap, to_rgba
 
 from scipy.stats import spearmanr, pearsonr
 
@@ -162,7 +165,7 @@ def corrMeasures_outStr(meas_mat, IC_measure, indices):
 #=================================================================================================#
 # PLOTS
 
-def plot_correlations(corr_mat, label_list, ylabel=r'$\rho_{sp}(EC,IC)$', figsize=(8, 6), ax=None, outf: str = None, show_plot: bool = False):
+def plot_correlations(corr_mat, label_list, indices, ylabel=r'$\rho_{sp}(EC,IC)$', sort=False,  markersize=20,lw=2,ymin=0,ymax=1, figsize=(8, 6), ax=None, outf: str = None, show_plot: bool = False):
     #colors_dl = ['#255D93', '#5FA6D6', '#B02106', '#F24D33', '#2C2C2C', '#787878']
     colors_dl = ['#255D93', '#B02106', '#2C2C2C']
     
@@ -170,21 +173,26 @@ def plot_correlations(corr_mat, label_list, ylabel=r'$\rho_{sp}(EC,IC)$', figsiz
         fig,ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.get_figure() 
-
+    if sort:
+        L = np.argsort(corr_mat[0])
+    else:
+        L = np.arange(len(indices))
+        
     for idx_plot in range(len(label_list)):
-        L = np.argsort(corr_mat[idx_plot])
-
-        ax.plot(corr_mat[idx_plot][L], '.-', markersize=20,
-                color=colors_dl[idx_plot], label=label_list[idx_plot], lw=4, alpha=0.8)
+        ax.plot(corr_mat[idx_plot][L], '.-', markersize=markersize,
+                color=colors_dl[idx_plot], label=label_list[idx_plot], lw=lw, alpha=0.8)
 
     ax.set_xlabel(r'source channel ID', fontsize=DIM)
     ax.set_ylabel(ylabel, fontsize=DIM)
-    ax.set_ylim(-1, 1)
-    ax.set_xticks([])
+    ax.set_ylim(ymin, ymax)
 
-    ax.legend(fontsize=DIM-5, loc='lower right', ncol=3, handlelength=1)
+    pl.set_format(ax, pwr_x_max=2,  DIM = DIM)
     
-    set_format(ax, pwr_x_max=2,  DIM = DIM)
+    ax.set_xticks(np.arange(len(indices)))
+    ax.set_xticklabels([ indices[i] for i in range(len(indices))])
+    ax.tick_params(axis='x', labelsize=10, rotation=45)
+    ax.tick_params(axis='y', which='major', rotation=0, labelsize=DIM-2)
+    ax.legend(fontsize=DIM-5, ncol=1, handlelength=1)
     
     if ax is None:
         if outf:
@@ -193,7 +201,6 @@ def plot_correlations(corr_mat, label_list, ylabel=r'$\rho_{sp}(EC,IC)$', figsiz
                 plt.close()
         else:
             plt.show()
-
             
 #=========================================================================================================#
 # accuracy of EC in reconstructing the perturbome [for every fixed stim. channel.]
@@ -224,11 +231,11 @@ def plot_corr_elements(vec,mat_labels,indices,title,label=r'$\rho_{{\,spearman}}
     else:
         ax.set_yticklabels([r'$\rho_{p}$('+mat_labels[idx_meas]+',IC)' for idx_meas in range(len(mat_labels))])
     #ax.set_yticklabels(mat_labels)
-    ax.set_xticks([0, 5, 10, 15])
+    ax.set_xticks(np.arange(len(indices)))
     dm = len(indices)-1
-    ax.set_xticklabels([ indices[0],indices[5], indices[10],indices[15] ])
+    ax.set_xticklabels([ indices[i] for i in range(len(indices))])
 
-    ax.tick_params(axis='x', labelsize=DIM, rotation=0)
+    ax.tick_params(axis='x', labelsize=20, rotation=45)
     ax.tick_params(axis='y', which='major', rotation=0, labelsize=DIM-2)
     ax.xaxis.tick_top()
 
