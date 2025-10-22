@@ -216,7 +216,7 @@ def fit_and_plot(x, y, fit_type="exp", rm_quantiles=True, q=0.02, z_thresh=5, xl
     return popt, r2, aic, bic
 
 
-def scatter_residuals(mat, lab, res_mat, res_lab, IC, res_IC, pval_IC, i, indices_, 
+def scatter_residuals(mat, lab, res_mat, res_lab, IC, res_IC, pval_IC, i, indices_, figsize=(9,3),
                       reg_line=False, ymin:float=None, ymax:float=None, outf : str = None, show_plot = True):
 
     ec_v  = mat[i]
@@ -227,7 +227,7 @@ def scatter_residuals(mat, lab, res_mat, res_lab, IC, res_IC, pval_IC, i, indice
     
     cols_  = ['#E93423','#3333F6','#999AF8','#030062']
 
-    fig,axs = plt.subplots(1,2,figsize=(13,4))
+    fig,axs = plt.subplots(1,2,figsize=figsize)
     
     ax=axs[0]
     ax.scatter(ic_v[p_IC>=0.05],ec_v[p_IC>=0.05],s=150,c=cols_[2],edgecolor='white')
@@ -236,7 +236,7 @@ def scatter_residuals(mat, lab, res_mat, res_lab, IC, res_IC, pval_IC, i, indice
     if reg_line:
         sns.regplot(x=ic_v, y=ec_v, scatter=False, ax=ax, line_kws=dict(color=colorz[4]))
     
-    set_format(ax=ax)
+    pl.set_format(ax=ax)
     ax.set_xlabel('IC')
     ax.set_ylabel(lab)
     ax.set_xlim(0,1)
@@ -250,7 +250,7 @@ def scatter_residuals(mat, lab, res_mat, res_lab, IC, res_IC, pval_IC, i, indice
     if reg_line:
         sns.regplot(x=res_i, y=res_e, scatter=False, ax=ax, line_kws=dict(color=colorz[4]))
     
-    set_format(ax=ax)
+    pl.set_format(ax=ax)
     ax.set_xlabel('$\epsilon_{IC}$')
 
     ax.set_ylabel(f'$\epsilon_{{{lab}}}$')
@@ -262,7 +262,7 @@ def scatter_residuals(mat, lab, res_mat, res_lab, IC, res_IC, pval_IC, i, indice
     #-------------------------------------------------------------------------------------------#
     
     fig.subplots_adjust(wspace=0.5, hspace=0.7)
-    fig.suptitle(f'stim. chan. {indices_[i]}',y=1.3)
+    fig.suptitle(f'stim. chan. {indices_[i]}',y=1.4)
 
     if outf:
         plt.savefig(outf, bbox_inches='tight')
@@ -270,6 +270,7 @@ def scatter_residuals(mat, lab, res_mat, res_lab, IC, res_IC, pval_IC, i, indice
             plt.close()
     else:
         plt.show()
+        
 
 
 
