@@ -4,6 +4,7 @@ from matplotlib.ticker import ScalarFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.colors as mcolors
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap, to_rgba
+
 from scipy.stats import linregress, gaussian_kde
 from scipy.stats import spearmanr, pearsonr
 from scipy.optimize import curve_fit
@@ -122,6 +123,9 @@ def set_format(ax, axis_ticks = 'both', pwr_x_min=-1, pwr_x_max=1, pwr_y_min=-1,
         cbar.ax.yaxis.offsetText.set_fontsize(DIM-10)
         cbar.ax.xaxis.set_major_formatter(formatter_cbar); 
         cbar.ax.xaxis.offsetText.set_fontsize(DIM-10)
+
+        cbar.formatter = formatter_cbar
+        cbar.update_ticks()
         
         # Move the offset text to the top of the colorbar
         dx, dy = 0.8, 0.3  # Adjust dy for vertical and dx for horizontal shifts
@@ -129,6 +133,169 @@ def set_format(ax, axis_ticks = 'both', pwr_x_min=-1, pwr_x_max=1, pwr_y_min=-1,
         cbar.ax.yaxis.offsetText.set_transform(cbar.ax.yaxis.offsetText.get_transform() + cbar_offset)
         
 
+#=================================================================================================#
+# plot channels map
+
+def plot_channel_map(pos, channel, def_chans, indices, array_col, stim_map=True, cmap='Blues', cbar_label='', title=None, dim = 60, font_DIM=30,
+                     figsize=(23, 11), ax=None, outf : str = None, show_plot = True):
+    if ax is None:
+        fig,ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.get_figure() 
+        outf=None
+        
+    # General parameters
+    dim2 = dim/10*6;     size = dim*30
+    s    = 6/60*dim
+
+    vmin, vmax = np.percentile(array_col, [2.5, 97.5])
+    
+    if stim_map:
+        # ------- to map only stim channels with a quantity
+        
+        # FULL MAP OF CHANNELS 
+        ax.scatter(pos[:, 0] / 1000, pos[:, 1] / 1000, s=s, marker='s', color='lightgrey',label='recording channels', zorder=0)
+        # STIMULATION CHANNELS
+        if cmap is not None:
+            vmin, vmax = np.percentile(array_col, [2.5, 97.5])
+        else:
+            vmin, vmax = (None, None)
+        scatter = ax.scatter(pos[indices, 0] / 1000, pos[indices, 1] / 1000, cmap=cmap, vmin=vmin, vmax=vmax, c=array_col, edgecolor='white', s=size, marker='*', alpha=1, zorder=1, label='stim. channels')
+        # Add a black outline to all stimulation channels
+        for ch in def_chans:
+            ax.scatter(pos[channel == ch, 0] / 1000, pos[channel == ch, 1] / 1000, color='white', edgecolor='white', linewidths=0.1, s=dim+dim/10, marker='*', alpha=1, zorder=3)
+    else:
+        # ------- to map all channels with a quantity
+        vmin, vmax = np.percentile(array_col, [2.5, 97.5])
+        # FULL MAP OF CHANNELS 
+        scatter = ax.scatter(pos[:, 0] / 1000, pos[:, 1] / 1000, s=s, marker='s', cmap=cmap, vmin=vmin, vmax=vmax, c=array_col, label='recording channels', zorder=0)
+        # STIMULATION CHANNELS
+        ax.scatter(pos[indices, 0] / 1000, pos[indices, 1] / 1000, color='none', edgecolor='black', s=size, marker='*', alpha=1, zorder=1, label='stim. channels')
+    
+    if cmap is not None:
+        cbar = fig.colorbar(scatter, ax=ax, label=cbar_label)
+    else:
+        pass
+    #----------------------------------------------------------------------------------------------------#
+    
+    # LABELS FOR STIM CHANNELS 
+    a = 0
+    for ch in def_chans:
+        x = pos[channel == ch, 0][0] / 1000;    y = pos[channel == ch, 1][0] / 1000
+        if ch == 620:
+            dx, dy = -178.5 / 1000, 40 / 1000
+        elif ch == 894:
+            dx, dy = -138.5 / 1000, 80 / 1000
+        elif ch == 682:
+            dx, dy = 10.5 / 1000, 20 / 1000
+        elif ch == 328:
+            dx, dy = -178.5/1000, 50/1000
+        else:
+            dx, dy = 10.5 / 1000, 40 / 1000
+        ax.text(x + dx, y + dy, str(indices[a]),fontdict=dict(color='black', alpha=1, size=dim - dim2))
+        a += 1
+    
+    plt.xlabel('x (mm)', fontsize=font_DIM);    plt.ylabel('y (mm)', fontsize=font_DIM)
+    set_format(ax, axis_ticks='both', cbar=None, DIM=font_DIM)
+
+    ax.legend(fontsize=font_DIM, ncol=2, loc='upper center', bbox_to_anchor=(0.5, 1.2),
+              labelspacing=0.4, handletextpad=0.8, handlelength=1., frameon=False)
+
+    if title:
+        ax.set_title(title)
+
+    if outf:
+        plt.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
+
+
+# optimized for small size plots also
+def plot_channel_map_2(pos, channel, def_chans, indices, array_col, stim_map=True, cmap=None, cbar_label='', title=None, dotcolor='lightgrey',
+                       dotsize=4.5, starsize = 1350, starsize_center = 50, text_dim = 18, dim = 60, font_DIM=30, ncol_leg=2, y_leg=1.2,
+                       figsize=(23, 11), ax=None, outf : str = None, show_plot = True):
+    if ax is None:
+        fig,ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.get_figure() 
+        outf=None
+        
+    if stim_map:
+        # ------- to map only stim channels with cmap representing a quantity
+        
+        # FULL MAP OF CHANNELS 
+        ax.scatter(pos[:, 0] / 1000, pos[:, 1] / 1000, s=dotsize/2, lw=0.4, marker='s', color=dotcolor,edgecolor='white',label='rec. channels', zorder=0)
+        
+        # STIMULATION CHANNELS
+        if cmap is not None:
+            vmin, vmax = np.percentile(array_col, [2.5, 97.5])
+        else:
+            vmin, vmax = (None, None)
+        scatter = ax.scatter(pos[indices, 0] / 1000, pos[indices, 1] / 1000, cmap=cmap, vmin=vmin, vmax=vmax, c=array_col, 
+                             edgecolor='white', s=starsize, marker='*', alpha=1, zorder=1, label='stim. channels')
+        
+        if starsize_center is not None:
+            ax.scatter(pos[indices, 0] / 1000, pos[indices, 1] / 1000, color='white', edgecolor='white', linewidths=0.1, 
+                       s=starsize_center, marker='*', alpha=1, zorder=3)
+    else:
+        # ------- to map all channels with a quantity
+        vmin, vmax = np.percentile(array_col, [2.5, 97.5])
+        # FULL MAP OF CHANNELS 
+        scatter = ax.scatter(pos[:, 0] / 1000, pos[:, 1] / 1000, s=dotsize/2, marker='s', cmap=cmap, vmin=vmin, vmax=vmax, c=array_col, 
+                             label='recording channels', zorder=0)
+        # STIMULATION CHANNELS
+        ax.scatter(pos[indices, 0] / 1000, pos[indices, 1] / 1000, color='none', edgecolor='black', s=starsize, marker='*', alpha=1, 
+                   zorder=1, label='stim. channels')
+    
+    if cmap is not None:
+        cbar = fig.colorbar(scatter, ax=ax, label=cbar_label)
+    else:
+        pass
+            
+    # LABELS FOR STIM CHANNELS 
+    a = 0
+    for idx in indices:
+        x = pos[channel == channel[idx], 0][0] / 1000;    y = pos[channel == channel[idx], 1][0] / 1000
+        if idx == 543:
+            dx, dy = -178.5 / 1000, 40 / 1000
+        elif idx == 12:
+            dx, dy = -138.5 / 1000, 80 / 1000
+        elif idx == 407:
+            dx, dy = -138.5 / 1000, 80 / 1000
+        elif idx == 478:
+            dx, dy = -138.5 / 1000, 80 / 1000
+        elif idx == 595:
+            dx, dy = -138.5 / 1000, 80 / 1000
+        elif idx == 772:
+            dx, dy = -180 / 1000, 80 / 1000
+        elif idx == 302:
+            dx, dy = -20 / 1000, -120 / 1000
+        elif idx == 600:
+            dx, dy = 10.5 / 1000, 20 / 1000
+        elif idx == 629:
+            dx, dy = -138.5 / 1000, 80 / 1000
+        elif idx == 278:
+            dx, dy = -178.5/1000, 50/1000
+        else:
+            dx, dy = 20.5 / 1000, 50 / 1000
+        ax.text(x + dx, y + dy, str(indices[a]),fontdict=dict(color='black', alpha=1, size=text_dim))
+        a += 1
+    
+    plt.xlabel('x (mm)', fontsize=font_DIM);    plt.ylabel('y (mm)', fontsize=font_DIM)
+    set_format(ax, axis_ticks='both', cbar=None, DIM=font_DIM)
+
+    ax.legend(fontsize=font_DIM, ncol=ncol_leg, loc='upper center', bbox_to_anchor=(0.5, y_leg),
+              labelspacing=0.4, handletextpad=0.8, handlelength=1., frameon=False)
+
+    if title:
+        ax.set_title(title)
+
+    if outf is not None:
+        plt.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
+
+    
 #=================================================================================================#
 # Plot the MEA channel map [with colorbar]
 
@@ -146,6 +313,7 @@ def plot_map(pos, car_array, cbar_label='cluster ID', title='recording channels 
         fig,ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.get_figure() 
+        outf=None
         
     # channels map
     im = ax.scatter(pos[:,0],pos[:,1],c=car_array,s=1,marker='s',cmap=cmap)
@@ -154,20 +322,20 @@ def plot_map(pos, car_array, cbar_label='cluster ID', title='recording channels 
     if title:
         ax.set_title(title)
     fig.colorbar(im, ax=ax, label=cbar_label)
+
+    ax.set_facecolor('none')
     
-    if ax is None:
-        if outf:
-            ax.savefig(outf, bbox_inches='tight')
-            if not show_plot:
-                plt.close()
-        else:
-            plt.show()
+    if outf is not None:
+        plt.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
+
 
 #=================================================================================================#
 # Plot the perturbome : MEA channel map [with colorbar] - colors corresponding to the response 
 #                       (or predicted response) of each channel to the stimulation of a fixed channel
 
-def plot_perturbome(mat, map_coords, channel, indices, label='IC', stim_id=0, vmin=0, vmax=1, cmap='cool', log=False, 
+def plot_perturbome_old(mat, map_coords, channel, indices, label='IC', stim_id=0, vmin=0, vmax=1, cmap='cool', log=False, 
              DIM=40, dotsize=22, starsize=1800, figsize=(20,11), ax=None, outf: str = None, show_plot=False):
 
     ch  = channel[indices[stim_id]]
@@ -176,7 +344,8 @@ def plot_perturbome(mat, map_coords, channel, indices, label='IC', stim_id=0, vm
         fig,ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.get_figure()
-    
+        outf=None
+        
     # map of recording channels
     ax.scatter(map_coords[:,0], map_coords[:,1], s=dotsize, marker='s', c='lightgrey', edgecolor='white', zorder=1) #label = 'recording channels',
     
@@ -202,14 +371,124 @@ def plot_perturbome(mat, map_coords, channel, indices, label='IC', stim_id=0, vm
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=1, fontsize=DIM, frameon=False)
     
     set_format(ax=ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, DIM = DIM)
+
+    ax.set_facecolor('none')
     
+    if outf is not None:
+        plt.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
+
+
+
+def plot_perturbome(mat, map_coords, channel, indices, label='IC', stim_id=0, vmin=0, vmax=1, cmap='cool', log=False, 
+             star_color='tab:red', DIM=40, dotsize=22, starsize=1800, figsize=(20,11), ax=None, outf: str = None, show_plot=False):
+
+    import matplotlib.patheffects as pe
+    
+    ch  = channel[indices[stim_id]]
+
     if ax is None:
-        if outf:
-            ax.savefig(outf, bbox_inches='tight')
-            if not show_plot:
-                plt.close()
-        else:
-            plt.show()
+        fig,ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.get_figure()
+        outf=None
+        
+    # map of recording channels as a background
+    ax.scatter(map_coords[:,0], map_coords[:,1], s=dotsize/2, lw=0.4, marker='s', c='lightgrey', edgecolor='white', zorder=0)
+    
+    # scatter significant connections
+    idxs = np.where(mat[stim_id, :] != 0)[0]
+    values = mat[stim_id, idxs]
+    if log:
+        values = np.log10(values)
+    # Clean up: remove NaN and clip out-of-bounds
+    values = np.nan_to_num(values, nan=0.0, posinf=1.0, neginf=0.0)
+    values = np.clip(values, vmin, vmax)
+    
+    scatter = ax.scatter(map_coords[idxs, 0], map_coords[idxs, 1], s=dotsize, marker='s', c=values,
+                        edgecolor='white', cmap=cmap, vmin=vmin, vmax=vmax, zorder=1)
+
+    # stim. channel
+    ax.scatter(map_coords[channel==ch,0], map_coords[channel==ch,1], c='none', edgecolor='white',   linewidths=8, s=starsize, marker='*', zorder=2)
+    ax.scatter(map_coords[channel==ch,0], map_coords[channel==ch,1], c='none', edgecolor=star_color, linewidths=5, s=starsize, marker='*', 
+               label = f'stim. channel {indices[stim_id]}', zorder=3)
+    #dx, dy = 10.5/1000, 40/1000
+    #txt = ax.text(map_coords[channel==ch,0]+dx, map_coords[channel==ch,1]+dy, str(indices[stim_id]), 
+    #              fontdict=dict(color='black', alpha=1, size=DIM), zorder=3)
+    #txt.set_path_effects([ pe.Stroke(linewidth=10, foreground='white'), pe.Normal() ])
+
+    # labels
+    ax.set_xlabel('x  (mm)',fontsize=DIM)
+    ax.set_ylabel('y  (mm)',fontsize=DIM)
+    
+    cbar = fig.colorbar(scatter, ax=ax)
+    cbar.set_label(label=label, fontsize=DIM) 
+    cbar.ax.tick_params(labelsize=DIM)
+    
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.4), ncol=1, fontsize=DIM, frameon=False)
+    
+    set_format(ax=ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, DIM = DIM)
+    
+    if outf is not None:
+        plt.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
+
+
+def plot_perturbome2(mat, map_coords, channel, indices, label='IC', stim_id=0, vmin=0, vmax=1, cmap='cool', log=False, 
+             star_color='tab:red', DIM=40, dotsize=22, starsize=1800, figsize=(20,11), ax=None, outf: str = None, show_plot=False):
+
+    import matplotlib.patheffects as pe
+    
+    ch  = channel[indices[stim_id]]
+
+    if ax is None:
+        fig,ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.get_figure()
+    
+    # map of recording channels as a background
+    ax.scatter(map_coords[:,0], map_coords[:,1], s=dotsize/2, lw=0.4, marker='s', c='lightgrey', edgecolor='white', zorder=0)
+    
+    # scatter significant connections
+    idxs = np.where(mat[stim_id, :] != 0)[0]
+    values = mat[stim_id, idxs]
+    if log:
+        values = np.log10(values)
+    # Clean up: remove NaN and clip out-of-bounds
+    values = np.nan_to_num(values, nan=0.0, posinf=1.0, neginf=0.0)
+    values = np.clip(values, vmin, vmax)
+    
+    scatter = ax.scatter(map_coords[idxs, 0], map_coords[idxs, 1], s=dotsize, marker='s', c=values, linewidths=0.1,
+                        edgecolor='white', cmap=cmap, vmin=vmin, vmax=vmax, zorder=1)
+
+    # stim. channel
+    ax.scatter(map_coords[channel==ch,0], map_coords[channel==ch,1], c='none', edgecolor='white',   linewidths=4.5, s=starsize, marker='*', zorder=2)
+    ax.scatter(map_coords[channel==ch,0], map_coords[channel==ch,1], c='none', edgecolor=star_color, linewidths=2.5, s=starsize, marker='*', 
+               label = f'stim. channel {indices[stim_id]}', zorder=3)
+    #dx, dy = 10.5/1000, 40/1000
+    #txt = ax.text(map_coords[channel==ch,0]+dx, map_coords[channel==ch,1]+dy, str(indices[stim_id]), 
+    #              fontdict=dict(color='black', alpha=1, size=DIM), zorder=3)
+    #txt.set_path_effects([ pe.Stroke(linewidth=10, foreground='white'), pe.Normal() ])
+
+    # labels
+    ax.set_xlabel('x  (mm)',fontsize=DIM)
+    ax.set_ylabel('y  (mm)',fontsize=DIM)
+    
+    cbar = fig.colorbar(scatter, ax=ax)
+    cbar.set_label(label=label, fontsize=DIM) 
+    cbar.ax.tick_params(labelsize=DIM)
+    
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.4), ncol=1, fontsize=DIM, frameon=False)
+    
+    set_format(ax=ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, DIM = DIM)
+    
+    if outf is not None:
+        plt.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
+
             
 #=================================================================================================#
 # plot matrix – aspect='auto'
@@ -222,6 +501,7 @@ def plot_mat_aspect(mat, vmin=None, vmax=None, cmap='viridis', title=None, xlabe
         fig, ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.get_figure() 
+        outf=None
         
     if vmin is None and vmax is None:
         vmin, vmax = np.percentile(mat, [5, 97.5])
@@ -247,16 +527,16 @@ def plot_mat_aspect(mat, vmin=None, vmax=None, cmap='viridis', title=None, xlabe
 
     fig.colorbar(im, ax=ax, label=cbarlabel)
 
-    if ax is None:
-        if outf:
-            plt.savefig(outf, bbox_inches='tight')
-            
-            if not show_plot:
-                plt.close()
-        else:
-            plt.show()
+    ax.set_facecolor('none')
+    
+    if outf is not None:
+        plt.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
+
         
 
+            
 #=================================================================================================#
 # plot matrix
 
@@ -269,6 +549,7 @@ def plot_mat(mat, title=None, xlabel='target', ylabel='source', cmap='viridis', 
         fig, ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.get_figure() 
+        outf=None
         
     if vmin is None and vmax is None:
         vmin, vmax = np.percentile(mat, [5, 97.5])
@@ -285,23 +566,19 @@ def plot_mat(mat, title=None, xlabel='target', ylabel='source', cmap='viridis', 
         ax.invert_yaxis()
     
     fig.colorbar(im, ax=ax, label=cbarlabel)
+
+    ax.set_facecolor('none')
     
-    if outf:
+    if outf is not None:
         plt.savefig(outf, bbox_inches='tight')
-    
-    if ax is None:
-        if outf:
-            plt.savefig(outf, bbox_inches='tight')
-            
-            if not show_plot:
-                plt.close()
-        else:
-            plt.show()
+        if not show_plot:
+            plt.close()
+
 
 
 #=================================================================================================#
 # scatter plot
-            
+
 def plot_scatter(ic_mat, ec_mat, zeroExp=-11, log=False, xlabel='IC', ylabel='EC', title=None, dotsize=0.1, 
                  cmap=None, edgecolor=None, linewidths=0.2, regcolor='tab:red', dotcolor='tab:blue', reg_line=True, show_corr=True,
                  ymin=None, ymax=None, ax=None, outf=None, show_plot=False):
@@ -316,92 +593,48 @@ def plot_scatter(ic_mat, ec_mat, zeroExp=-11, log=False, xlabel='IC', ylabel='EC
         ec_vec = ec_mat.flatten()
         x=ic_vec
         y=ec_vec
+
+    if ymin is not None and ymax is not None:
+        y_ = np.copy(y)        
+        x = x[(y_>=ymin) & (y_<ymax)]
+        y = y_[(y_>=ymin) & (y_<ymax)]
     
     if ax is None:
         fig,ax = plt.subplots()
     else:
         fig = ax.get_figure() 
+        outf=None
         
     if cmap:
-        xy = np.vstack([ic_vec, ec_vec])
+        xy = np.vstack([x, y])
         z = gaussian_kde(xy)(xy)
         vmax = np.max(z); vmin = vmax; 
         # Plot with density-based color
-        scatter = ax.scatter(ic_vec, ec_vec, c=z, s=dotsize, alpha=0.7, edgecolor=edgecolor, linewidths=linewidths, cmap=cmap)
+        scatter = ax.scatter(x, y, c=z, s=dotsize, alpha=0.7, edgecolor=edgecolor, linewidths=linewidths, cmap=cmap)
         cbar = plt.colorbar(scatter, ax=ax, shrink=0.5)
         cbar.set_label(r'density', fontsize=DIM)
         cbar.ax.tick_params(labelsize=DIM)
     else:
-        ax.scatter(ic_vec, ec_vec, s=dotsize, c=dotcolor, edgecolor=edgecolor, linewidths=linewidths, alpha=0.7)
+        ax.scatter(x, y, s=dotsize, c=dotcolor, edgecolor=edgecolor, linewidths=linewidths, alpha=0.7)
 
     if reg_line:
         sns.regplot(x=x, y=y, ax=ax, scatter=False, color=regcolor, line_kws={'linewidth': 1})
     
     if show_corr:
-        cp = np.round(pearsonr(x,y)[0],2)
-        cs = np.round(spearmanr(x,y)[0],2)
+        cp = np.round(pearsonr(ic_vec,ec_vec)[0],2)
+        cs = np.round(spearmanr(ic_vec,ec_vec)[0],2)
+        pval_p = pearsonr(ic_vec,ec_vec)[1]
+        pval_s = spearmanr(ic_vec,ec_vec)[1]
         if title:
-            ax.set_title(title+'\n'+rf'$\rho_p={cp}$'+'\n'+rf'$\rho_{{sp}}={cs}$')
+            ax.set_title(title+'\n'+rf'$\rho_{{p}}^{{***}}={cp}$'+'\n'+rf'$\rho_{{sp}}^{{***}}={cs}$')
         else:
-            ax.set_title(rf'$\rho_p={cp}$'+'\n'+rf'$\rho_{{sp}}={cs}$')
+            ax.set_title(rf'$\rho_{{p}}^{{***}}={cp}$'+'\n'+rf'$\rho_{{sp}}^{{***}}={cs}$')
     else:
         if title:
             ax.set_title(title)
         
-    if ymin is not None and ymax is not None:
-        ax.set_ylim(ymin,ymax)
-        
-    ax.set_xlabel(xlabel); ax.set_ylabel(ylabel);
-
-            
-def plot_scatter(ic_mat, ec_mat, zeroExp=-11, log=False, xlabel='IC', ylabel='EC', title=None, dotsize=0.1, 
-                 cmap=None, edgecolor=None, linewidths=0.2, regcolor='tab:red', dotcolor='tab:blue', reg_line=True, show_corr=True,
-                 ymin=None, ymax=None, ax=None, outf=None, show_plot=False):
-    import seaborn as sns
-    from scipy.stats import pearsonr, spearmanr, gaussian_kde
-    ic_vec = ic_mat.flatten()
-    if log:
-        ec_vec = np.log10(ec_mat.flatten()+10**zeroExp)
-        x=ic_vec[ec_mat.flatten()!=0]
-        y=ec_vec[ec_mat.flatten()!=0]
-    else:
-        ec_vec = ec_mat.flatten()
-        x=ic_vec
-        y=ec_vec
-    
-    if ax is None:
-        fig,ax = plt.subplots()
-    else:
-        fig = ax.get_figure() 
-        
-    if cmap:
-        xy = np.vstack([ic_vec, ec_vec])
-        z = gaussian_kde(xy)(xy)
-        vmax = np.max(z); vmin = vmax; 
-        # Plot with density-based color
-        scatter = ax.scatter(ic_vec, ec_vec, c=z, s=dotsize, alpha=0.7, edgecolor=edgecolor, linewidths=linewidths, cmap=cmap)
-        cbar = plt.colorbar(scatter, ax=ax, shrink=0.5)
-        cbar.set_label(r'density', fontsize=DIM)
-        cbar.ax.tick_params(labelsize=DIM)
-    else:
-        ax.scatter(ic_vec, ec_vec, s=dotsize, c=dotcolor, edgecolor=edgecolor, linewidths=linewidths, alpha=0.7)
-
-    if reg_line:
-        sns.regplot(x=x, y=y, ax=ax, scatter=False, color=regcolor, line_kws={'linewidth': 1})
-    
-    if show_corr:
-        cp = np.round(pearsonr(x,y)[0],2)
-        cs = np.round(spearmanr(x,y)[0],2)
-        if title:
-            ax.set_title(title+'\n'+rf'$\rho_p={cp}$'+'\n'+rf'$\rho_{{sp}}={cs}$')
-        else:
-            ax.set_title(rf'$\rho_p={cp}$'+'\n'+rf'$\rho_{{sp}}={cs}$')
-    else:
-        if title:
-            ax.set_title(title)
-        
-    if ymin is not None and ymax is not None:
-        ax.set_ylim(ymin,ymax)
+    #if ymin is not None and ymax is not None:
+    #    ax.set_ylim(ymin,ymax)
         
     ax.set_xlabel(xlabel); ax.set_ylabel(ylabel);
 
@@ -409,24 +642,13 @@ def plot_scatter(ic_mat, ec_mat, zeroExp=-11, log=False, xlabel='IC', ylabel='EC
         set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, pwr_cbar_min=-2, pwr_cbar_max=2,  DIM = DIM)
     else:
         set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = None, DIM = DIM)
-    
-    if ax is None:
-        if outf:
-            ax.savefig(outf, bbox_inches='tight')
-            if not show_plot:
-                plt.close()
-        else:
-            plt.show()
 
+    ax.set_facecolor('none')
     
-    if ax is None:
-        if outf:
-            ax.savefig(outf, bbox_inches='tight')
-            if not show_plot:
-                plt.close()
-        else:
-            plt.show()
-
+    if outf is not None:
+        plt.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
 
         
 #=================================================================================================#
@@ -487,13 +709,17 @@ def significance_label(p_value):
 #-------------------------------------------------------------------------------------------------#
 # barplot of the mean of vec1 elements corresponding to null or non-null elements of vec2
 
-def plot_bars(mat1, mat2, label1, label2, mat2_pval, color, colBar='black',doubleP=True, 
-              alternative='two-sided', alpha_th = 0.001, title=None, ax=None, outf : str = None, show_plot=False):
+def plot_bars(mat1, mat2, label1, label2, mat2_pval, color, fillColor='white', fill_alpha=0.8, colBar='black', doubleP=False, 
+              alternative='two-sided', alpha_th = 0.05, title=None, ax=None, outf : str = None, show_plot=False):
+
+    #from matplotlib import colors as mcolors
+    from matplotlib.colors import to_rgba
     
     if ax is None:
         fig,ax = plt.subplots()
     else:
         fig = ax.get_figure() 
+        outf=None
         
     vec1 = mat1.flatten()      # you do the average of vec1 for links corresponding to significant vec2 links
                                # and the average of vec1 for links corresponding to non-significance vec2 links
@@ -508,8 +734,8 @@ def plot_bars(mat1, mat2, label1, label2, mat2_pval, color, colBar='black',doubl
         t_sign    = vec1[np.logical_or(pval2 <= alpha_th, pval2 >= 1-alpha_th)]
         t_nonSign = vec1[np.logical_and(pval2 > alpha_th, pval2 < 1-alpha_th)]
     else:
-        t_sign    = vec1[pval <= alpha_th]
-        t_nonSign = vec1[pval > alpha_th]
+        t_sign    = vec1[pval2 <= alpha_th]
+        t_nonSign = vec1[pval2 > alpha_th]
         
     # means of vec1 corresponding to non-sign vec2 links (left bar) and to sig. links (right bar)
     means = [np.mean(t_nonSign), np.mean(t_sign)]
@@ -522,15 +748,13 @@ def plot_bars(mat1, mat2, label1, label2, mat2_pval, color, colBar='black',doubl
         p_val = None  # Too few data points for p-value calculation
 
     # Plot bars
-    bars = ax.bar([label2 + '\n$^{no\,\,sig}$', 
-                   label2 + '\n$^{sig}$'], means, color='white', 
-                  edgecolor=[color, color], linewidth=7)
-
-    ax.errorbar(0, means[0], yerr=stds[0], fmt='none', ecolor=colBar, elinewidth=5, capsize=10)  # vec2 non-sign
-    ax.errorbar(1, means[1], yerr=stds[1], fmt='none', ecolor=colBar, elinewidth=5, capsize=10)  # vec2 sign
+    face_rgba = to_rgba(fillColor, alpha=fill_alpha)
+    bars = ax.bar([label2 + '\n$^{no\,\,sig}$', label2 + '\n$^{sig}$'], means, color=face_rgba, width=0.5, edgecolor=['none', 'none'], linewidth=7)
+    ax.errorbar(0, means[0], yerr=stds[0], fmt='none', ecolor=colBar, elinewidth=3, capsize=6)  # vec2 non-sign
+    ax.errorbar(1, means[1], yerr=stds[1], fmt='none', ecolor=colBar, elinewidth=3, capsize=6)  # vec2 sign
 
     for bar in bars:
-        bar.set_linewidth(5)
+        bar.set_linewidth(2.5)
 
     # Add significance asterisks
     if p_val is not None:
@@ -557,13 +781,113 @@ def plot_bars(mat1, mat2, label1, label2, mat2_pval, color, colBar='black',doubl
         if title:
             ax.set_title(title, fontsize=DIM, y=1.2)
         
+    if outf is not None:
+        plt.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
+
+
+
+#-------------------------------------------------------------------------------------------------#
+#
+
+def evaluate_mean_sign(mat1, mat2, mat2_pval, alpha_th=0.05, doubleP=False, alternative='two-sided'):
+    
+    # you do the average of vec1 for links corresponding to significant vec2 links
+    # and the average of vec1 for links corresponding to non-significance vec2 links
+    vec1  = mat1.flatten()
+    vec2  = mat2.flatten()
+    pval2 = mat2_pval.flatten()
+    
+    x = vec1
+    y = vec2
+        
+    # Filter data based on significance
+    if doubleP:
+        t_sign    = vec1[np.logical_or(pval2 <= alpha_th, pval2 >= 1-alpha_th)]
+        t_nonSign = vec1[np.logical_and(pval2 > alpha_th, pval2 < 1-alpha_th)]
+    else:
+        t_sign    = vec1[pval2 <= alpha_th]
+        t_nonSign = vec1[pval2 > alpha_th]
+        
+    # means of vec1 corresponding to non-sign vec2 links (left bar) and to sig. links (right bar)
+    means = [np.mean(t_nonSign), np.mean(t_sign)]
+    stds  = [np.std(t_nonSign)/np.sqrt(len(t_nonSign)), np.std(t_sign)/np.sqrt(len(t_sign))]
+
+    # Calculate significance (t-test)
+    if len(t_nonSign) > 1 and len(t_sign) > 1:
+        p_val = permutation_test(t_nonSign, t_sign, num_permutations=10000, alternative=alternative)
+    else:
+        p_val = None  # Too few data points for p-value calculation
+
+    # Add significance asterisks
+    if p_val is not None:
+        sig_label = significance_label(p_val)
+    else:
+        sig_label = None
+
+    return means[0], means[1], stds[0], stds[1], sig_label
+
+#-------------------------------------------------------------------------------------------------#
+# barplot of the mean of vec1 elements corresponding to null or non-null elements of vec2 – for many sources
+
+def plot_source_bars(v1, v2, err1, err2, sig_labels, indices, lab_x='TE', lab_y='IC', color='tab:red', y_legend=1.4, title=None, y_title=1.6, figsize=(6,3), ax=None, outf : str = None, show_plot=False):
+
     if ax is None:
-        if outf:
-            ax.savefig(outf, bbox_inches='tight')
-            if not show_plot:
-                plt.close()
-        else:
-            plt.show()
+        fig,ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.get_figure() 
+        outf=None
+        
+    x = np.arange(len(v1))  # center of the bar pairs
+    width = 0.35            # widts of each bar
+    
+    # bars
+    ax.bar(x - width/2, v1, width, color=color, alpha=0.65, label=f'{lab_x}$_{{no\,\,sign}}$')
+    ax.bar(x + width/2, v2, width, color=color, alpha=0.30, label=f'{lab_x}$_{{sign}}$')
+    
+    # errorbars
+    ax.errorbar(x - width/2, v1, yerr=err1, fmt='none', ecolor='k', elinewidth=1, capsize=2)
+    ax.errorbar(x + width/2, v2, yerr=err2, fmt='none', ecolor='k', elinewidth=1, capsize=2)
+    
+    # ---- sign labels ----
+    pair_tops = np.maximum(v1 + err1, v2 + err2)
+    
+    # vertical padding verticale in data units (5% of the excursion)
+    yr    = ax.get_ylim()
+    y_pad = 0.05 * (yr[1] - yr[0])
+    
+    for i, lab in enumerate(sig_labels):
+        if lab and lab != 'ns':   # if you want also 'ns' lables, remove this 'if'
+            ax.text(x[i], pair_tops[i] + y_pad, lab,
+                    ha='center', va='bottom', fontsize=9)
+    
+    # put ylimit a bit higher (if labels touch the boundary of the box)
+    ax.set_ylim(yr[0], max(yr[1], np.max(pair_tops + 2*y_pad)))
+    
+    # put this BEFORE x-ticks labeling!
+    set_format(ax=ax, DIM=DIM, pwr_y_min=-2)
+    
+    # x-ticks centered on the couples
+    ax.set_xticks(np.arange(len(indices)))
+    ax.set_xticklabels([ indices[i] for i in range(len(indices))])
+    ax.tick_params(axis='x', labelsize=20, rotation=45)
+    # y label
+    ax.set_ylabel(f'mean({lab_y})')
+    
+    ax.set_facecolor('none');
+    
+    ax.legend(fontsize=DIM, ncol=2, loc='upper center', bbox_to_anchor=(0.5, y_legend),
+              labelspacing=0.4, handletextpad=0.8, handlelength=1., frameon=False)
+
+    if title:
+        ax.set_title(title, fontsize=DIM, y=y_title)
+    
+    if outf is not None:
+        plt.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
+
 
 #=================================================================================================#
 #                           SPATIAL PROPERTIES OF THE PERTURBOME
@@ -584,6 +908,7 @@ def plot_binned_mean(C_mat, D_mat, xlabel='eucl. dist.(mm)', ylabel='IC', color=
         fig,ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.get_figure() 
+        outf=None
         
     # Bin the x-axis values and compute means and standard deviations for y-values in each bin
     bins = np.linspace(np.min(D_v), np.max(D_v), N_bins + 1)
@@ -622,14 +947,13 @@ def plot_binned_mean(C_mat, D_mat, xlabel='eucl. dist.(mm)', ylabel='IC', color=
         ax.set_ylim(ymin, ymax)
 
     set_format(ax, axis_ticks='both', cbar=None, DIM=DIM)
-
-    if ax is None:
-        if outf:
-            ax.savefig(outf, bbox_inches='tight')
-            if not show_plot:
-                plt.close()
-        else:
-            plt.show()
+    
+    ax.set_facecolor('none')
+    
+    if outf is not None:
+        plt.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
 
 
 #=================================================================================================#
@@ -741,7 +1065,8 @@ def plot_fit_meas(Pdf, dist_poss, params_found, colors, label_meas, label_curve 
         fig,ax = plt.subplots(figsize=figsize)
     else:
         fig = ax.get_figure()
-
+        outf=None
+        
     y    = Pdf
     x    = dist_poss
     popt = params_found[:]          
@@ -777,13 +1102,13 @@ def plot_fit_meas(Pdf, dist_poss, params_found, colors, label_meas, label_curve 
     else:
         set_format(ax, axis_ticks = 'both', cbar = None, DIM = DIM)
 
-    if ax is None:
-        if outf:
-            ax.savefig(outf, bbox_inches='tight')
-            if not show_plot:
-                plt.close()
-        else:
-            plt.show()
+    ax.set_facecolor('none')
+    
+    if outf is not None:
+        plt.savefig(outf, bbox_inches='tight')
+        if not show_plot:
+            plt.close()
+
         
 #=================================================================================================#
 #                  INTENSITY OF CONNECTIONS AS A FUNCTION OF DISTANCE
@@ -816,7 +1141,7 @@ def remove_outliers_quantiles(x, y, q=0.01):
     return x[mask], y[mask]
 
 def fit_and_plot(x, y, fit_type="exp", rm_quantiles=True, q=0.02, z_thresh=5, xlabel='eucl. distance (mm)', ylabel='TE',
-                 cmap=None, edgecolor=None, linewidths=0.2, dotsize=10, dotcolor='tab:blue', ax=None, plot=True):
+                 cmap=None, edgecolor=None, linewidths=0.2, dotsize=10, dotcolor='tab:blue', outf:str=None, ax=None, plot=True):
 
     # clean data from outliers
     if rm_quantiles:
@@ -887,6 +1212,7 @@ def fit_and_plot(x, y, fit_type="exp", rm_quantiles=True, q=0.02, z_thresh=5, xl
             fig, ax = plt.subplots()
         else:
             fig = ax.get_figure()
+            outf=None
         if cmap:
             xy = np.vstack([x_clean, y_clean])
             z = gaussian_kde(xy)(xy)
@@ -910,9 +1236,17 @@ def fit_and_plot(x, y, fit_type="exp", rm_quantiles=True, q=0.02, z_thresh=5, xl
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.9), frameon=False)
+
+        ax.set_facecolor('none')
+        
         if cmap:
             pl.set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, DIM = DIM)
         else:
             pl.set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = None, DIM = DIM)
+
+        if outf is not None:
+            plt.savefig(outf, bbox_inches='tight')
+            if not show_plot:
+                plt.close()
 
     return popt, r2, aic, bic

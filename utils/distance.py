@@ -34,56 +34,19 @@ plt.rcParams.update({
     'xtick.labelsize': DIM,
     'ytick.labelsize': DIM
 })
-#=================================================================================================#
-
-#=================================================================================================#
-# Axes formatter for plots 
-
-def set_format(ax, axis_ticks = 'both', pwr_x_min=-1, pwr_x_max=1, pwr_y_min=-1, pwr_y_max=1,  cbar = None, pwr_cbar_min=-1, pwr_cbar_max=1,  DIM = 30):
-    
-    import seaborn as sns
-    
-    sns.despine(ax=ax, trim=False)
-    ax.set_facecolor('none')
-    
-    # - - -  TICKS
-    ax.tick_params(axis=axis_ticks, which='major', labelsize=DIM)
-    
-    # - - -  FORMATTER x axis
-    formatter_x = ScalarFormatter(useMathText=True)   
-    formatter_x.set_scientific(True)
-    formatter_x.set_powerlimits((pwr_x_min, pwr_x_max))
-    ax.xaxis.set_major_formatter(formatter_x)
-    ax.xaxis.offsetText.set_fontsize(DIM-10)
-    
-    from matplotlib.transforms import ScaledTranslation
-    dx, dy = 15/72, 15/72
-    offset = ScaledTranslation(dx, dy, ax.figure.dpi_scale_trans)
-    ax.xaxis.offsetText.set_transform(ax.xaxis.offsetText.get_transform() + offset)
-
-    # - - -  FORMATTER y axis
-    formatter_y = ScalarFormatter(useMathText=True)    
-    formatter_y.set_scientific(True) 
-    formatter_y.set_powerlimits((pwr_y_min, pwr_y_max))
-    ax.yaxis.set_major_formatter(formatter_y);
-    ax.yaxis.offsetText.set_fontsize(DIM-10)
-    
-    if cbar:
-        # - - -  FORMATTER cbar
-        formatter_cbar = ScalarFormatter(useMathText=True)   
-        formatter_cbar.set_scientific(True)
-        formatter_cbar.set_powerlimits((pwr_cbar_min, pwr_cbar_max))
-        cbar.ax.yaxis.set_major_formatter(formatter_cbar); 
-        cbar.ax.yaxis.offsetText.set_fontsize(DIM-10)
-        cbar.ax.xaxis.set_major_formatter(formatter_cbar); 
-        cbar.ax.xaxis.offsetText.set_fontsize(DIM-10)
-        
-        # Move the offset text to the top of the colorbar
-        dx, dy = 0.8, 0.3  # Adjust dy for vertical and dx for horizontal shifts
-        cbar_offset = ScaledTranslation(dx, dy, cbar.ax.figure.dpi_scale_trans)
-        cbar.ax.yaxis.offsetText.set_transform(cbar.ax.yaxis.offsetText.get_transform() + cbar_offset)
-        
+#=================================================================================================#        
 # Models
+'''def logistic_func(x, L, k, x0, c):
+    # 4-parameter logistic: lower asymptote c, amplitude L, slope k, inflection x0
+    return L / (1 + np.exp(-k * (x - x0))) + c
+'''
+from scipy.special import expit
+
+def logistic_func(x, A, d0, lam, c):
+    # c + A / (1 + exp((x-d0)/lam))  ==  c + A * expit(-(x-d0)/lam)
+    z = -(x - d0) / lam
+    return c + A * expit(z)
+    
 def exp_func(x, a, b, c):
     return a * np.exp(-b * x)+ c
                       
@@ -168,6 +131,66 @@ def fit_and_plot(x, y, fit_type="exp", rm_quantiles=True, q=0.02, z_thresh=5, xl
         x_clean, y_clean = x_pos, y_pos
         
         label = f"$ae^{{-bx}}$ log-fit \n $R^2$={r2:.2f}"#"\n AIC={aic:.1f}\n BIC={bic:.1f}"
+        
+    elif fit_type in ["logit", "logistic"]:
+        model_func = logistic_func
+        tiny = 1e-12
+        order = np.argsort(x_clean)
+        x = x_clean[order]
+        y = y_clean[order]
+    
+        # init
+        c0 = float(np.nanpercentile(y, 10))
+        A0 = max(tiny, float(np.nanmax(y) - c0))
+        y_mid = c0 + 0.5 * A0
+        idx_mid = int(np.argmin(np.abs(y - y_mid)))
+        d0_0 = float(x[idx_mid]) if x.size else 0.0
+    
+        # lambda0 on length 10–90 (fallback on range/6)
+        def interp_x_at_level(y_level):
+            diffs = y - y_level
+            sign = np.sign(diffs)
+            cross = np.where(sign[:-1] * sign[1:] <= 0)[0]
+            for k in cross:
+                x0, y0, x1, y1 = x[k], y[k], x[k+1], y[k+1]
+                if y1 == y0:
+                    return x0
+                t = (y_level - y0) / (y1 - y0)
+                return x0 + t * (x1 - x0)
+            return np.nan
+    
+        y10 = c0 + 0.10 * A0
+        y90 = c0 + 0.90 * A0
+        x10 = interp_x_at_level(y10)
+        x90 = interp_x_at_level(y90)
+        if np.isfinite(x10) and np.isfinite(x90) and (x90 > x10):
+            lam0 = max(1e-6, (x90 - x10) / 4.394)
+        else:
+            xr = float(np.nanmax(x) - np.nanmin(x)) if x.size else 1.0
+            lam0 = max(1e-6, xr / 6.0)
+    
+        p0 = (A0, d0_0, lam0, c0)
+    
+        # lam min bounds
+        '''xr = float(np.nanmax(x_clean) - np.nanmin(x_clean)) if x_clean.size else 1.0
+        lam_min = max(1e-6, xr / 1e3)
+        bounds = ([0.0, -np.inf, lam_min, 0.0], [np.inf, np.inf, np.inf, 1.0])
+    
+        popt, _ = curve_fit(logistic_func, x_clean, y_clean, p0=p0, bounds=bounds, maxfev=20000)'''
+
+        xr = float(np.nanmax(x_clean) - np.nanmin(x_clean)) if x_clean.size else 1.0
+        lam_min = max(1e-6, xr / 1e3)
+        lam0 = max(lam0, lam_min * (1.0 + 1e-12))  # p0[2] dentro ai bounds
+        c_lower, c_upper = -np.inf, np.inf
+        bounds = ([0.0, -np.inf, lam_min, c_lower],
+                  [np.inf,  np.inf,  np.inf, c_upper])
+        p0 = (A0, d0_0, lam0, c0)
+        popt, _ = curve_fit(logistic_func, x_clean, y_clean, p0=p0, bounds=bounds, maxfev=20000)
+        y_pred = logistic_func(x_clean, *popt)
+        r2 = r2_score(y_clean, y_pred)
+        aic, bic = compute_aic_bic(y_clean, y_pred, len(popt))
+        label = r"$c+\frac{A}{1+\exp\!\left(\frac{x-d_0}{\lambda}\right)}$" + f"\n $R^2$={r2:.2f}"
+
 
     else:
         raise ValueError("fit_type must be one of: 'exp', 'power', 'linear', 'log'")
@@ -177,10 +200,11 @@ def fit_and_plot(x, y, fit_type="exp", rm_quantiles=True, q=0.02, z_thresh=5, xl
             fig, ax = plt.subplots()
         else:
             fig = ax.get_figure()
+            outf=None
+            
         if cmap:
             xy = np.vstack([x_clean, y_clean])
             z = gaussian_kde(xy)(xy)
-            vmax = np.max(z); vmin = vmax; 
             # Plot with density-based color
             scatter = ax.scatter(x_clean, y_clean, c=z, s=dotsize, alpha=0.7, edgecolor=edgecolor, linewidths=linewidths, cmap=cmap)
             cbar = plt.colorbar(scatter, ax=ax, shrink=0.5)
@@ -196,23 +220,23 @@ def fit_and_plot(x, y, fit_type="exp", rm_quantiles=True, q=0.02, z_thresh=5, xl
             ax.plot(x_fit_line, linear_func(x_fit_line, *popt),          'r-', lw=2, label=label)
         elif fit_type == "log":
             ax.plot(x_fit_line, popt[0] * np.exp(-popt[1] * x_fit_line), 'r-', lw=2, label=label)
+        elif fit_type in ["logit", "logistic"]:
+            ax.plot(x_fit_line, model_func(x_fit_line, *popt), 'r-', lw=2, label=label)
 
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.4), frameon=False)
         if cmap:
-            set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, DIM = DIM)
+            pl.set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, DIM = DIM)
         else:
-            set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = None, DIM = DIM)
+            pl.set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = None, DIM = DIM)
 
-        if ax is None:
-            if outf:
-                ax.savefig(outf, bbox_inches='tight')
-                if not show_plot:
-                    plt.close()
-            else:
-                plt.show()
-                
+    
+        if outf is not None:
+            plt.savefig(outf, bbox_inches='tight')
+            if not show_plot:
+                plt.close()
+
     return popt, r2, aic, bic
 
 
@@ -264,12 +288,10 @@ def scatter_residuals(mat, lab, res_mat, res_lab, IC, res_IC, pval_IC, i, indice
     fig.subplots_adjust(wspace=0.5, hspace=0.7)
     fig.suptitle(f'stim. chan. {indices_[i]}',y=1.4)
 
-    if outf:
+    if outf is not None:
         plt.savefig(outf, bbox_inches='tight')
         if not show_plot:
             plt.close()
-    else:
-        plt.show()
         
 
 
@@ -395,7 +417,6 @@ def distance_probabilities(meas_matrix, dist_matrix, which=1, N_bins=25, edges=N
                 p_nd = np.divide(n_i, N_i, out=np.zeros_like(n_i, dtype=float), where=N_i > 0)
             vals = 1.0 - p_nd
 
-
         else:
             raise ValueError("Parameter 'which' must be an integer in {1,...,7}.")
 
@@ -470,6 +491,7 @@ def fit_decay_length(d, P, bounds=([0.0, 0.0, 0.0], [1.0, np.inf, 1.0]), plot=Fa
             fig, ax = plt.subplots(figsize=figsize)
         else:
             fig = ax.get_figure()
+            outf=None
 
         use_cbar = None
         if cmap:
@@ -516,13 +538,10 @@ def fit_decay_length(d, P, bounds=([0.0, 0.0, 0.0], [1.0, np.inf, 1.0]), plot=Fa
         else:
             pl.set_format(ax, axis_ticks='both', cbar=None, DIM=DIM)
 
-        if ax is None:
-            if outf:
-                ax.savefig(outf, bbox_inches='tight')
-                if not show_plot:
-                    plt.close()
-            else:
-                plt.show()
+        if outf is not None:
+            plt.savefig(outf, bbox_inches='tight')
+            if not show_plot:
+                plt.close()
 
     return float(lambda_mm), P0, popt  # (a,b,c)
 
