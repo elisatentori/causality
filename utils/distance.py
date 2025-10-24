@@ -225,7 +225,7 @@ def fit_and_plot(x, y, fit_type="exp", rm_quantiles=True, q=0.02, z_thresh=5, xl
 
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.4), frameon=False)
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.7), frameon=False)
         if cmap:
             pl.set_format(ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, DIM = DIM)
         else:
@@ -546,5 +546,159 @@ def fit_decay_length(d, P, bounds=([0.0, 0.0, 0.0], [1.0, np.inf, 1.0]), plot=Fa
     return float(lambda_mm), P0, popt  # (a,b,c)
 
 
+from scipy.optimize import curve_fit
+#for probability
+def fit_sigmoid_length(d, P,
+                       bounds=([0.0, -np.inf, 1e-6, 0.0], [np.inf,  np.inf,  np.inf, 1.0]),
+                       plot=False, color='tab:blue', ylabel='P(IC|dist)',
+                       label_meas='IC', label_curve='logistic fit',
+                       xmax=None, ymax=None, edgecolor='white', cmap=None, linewidths=0.2,
+                       figsize=(6,4), ax=None, outf: str = None, show_plot=False,
+                       sigma=None):
+    """
+    Fit logistico: P(d) = c + A / (1 + exp((d - d0) / lambda))
+    Ritorna: lambda_mm (= lambda), P0 (= P(d=0) del modello), popt = (A, d0, lambda, c)
 
+    - bounds default: A>=0, lambda>0, c in [0,1]; d0 libero
+    - P0 è il valore di modello a d=0 (come nella tua exp)
+    - se il fit fallisce o A ~ 0: lambda_mm = 0, popt=(0,0,0,0), curva piatta
+    """
+    d = np.asarray(d, float).ravel()
+    P = np.asarray(P, float).ravel()
+    m = np.isfinite(d) & np.isfinite(P)
+    d, P = d[m], P[m]
+    if sigma is not None:
+        sigma = np.asarray(sigma, float).ravel()[m]
+
+    def func(x, A, d0, lam, c):
+        return c + A / (1.0 + np.exp((x - d0) / lam))
+
+    tiny = 1e-12
+    good_fit = True
+
+    # --- casi degeneri ---
+    if (P.size < 3) or (np.nanmax(P) - np.nanmin(P) <= tiny):
+        good_fit = False
+        popt = (0.0, 0.0, 0.0, 0.0)
+        lambda_mm = 0.0
+        P0 = 0.0
+    else:
+        # ordina per distanza (aiuta per inits robusti)
+        order = np.argsort(d)
+        x = d[order]; y = P[order]
+        s = None if sigma is None else sigma[order]
+
+        # inits robusti:
+        c0 = float(np.nanpercentile(y, 10))                      # plateau lontano approx
+        A0 = max(tiny, float(np.nanmax(y) - c0))                 # ampiezza positiva
+        y_mid = c0 + 0.5 * A0                                    # livello mediano
+        # stima d0: distanza più vicina al livello mediano
+        idx_mid = int(np.argmin(np.abs(y - y_mid)))
+        d0_0 = float(x[idx_mid]) if x.size else 0.0
+
+        # lambda0: da larghezza 10–90 (se disponibile), altrimenti fallback
+        def interp_x_at_level(y_level):
+            # lineare tra punti adiacenti
+            diffs = y - y_level
+            sign = np.sign(diffs)
+            cross = np.where(sign[:-1] * sign[1:] <= 0)[0]  # cambi di segno
+            for k in cross:
+                x0, y0, x1, y1 = x[k], y[k], x[k+1], y[k+1]
+                if y1 == y0:  # segmento piatto
+                    return x0
+                t = (y_level - y0) / (y1 - y0)
+                return x0 + t * (x1 - x0)
+            return np.nan
+
+        y10 = c0 + 0.10 * A0
+        y90 = c0 + 0.90 * A0
+        x10 = interp_x_at_level(y10)
+        x90 = interp_x_at_level(y90)
+
+        if np.isfinite(x10) and np.isfinite(x90) and (x90 > x10):
+            W1090 = x90 - x10
+            lam0 = max(1e-6, W1090 / 4.394)  # W10–90 ≈ 4.394 * lambda
+        else:
+            xr = float(np.nanmax(x) - np.nanmin(x))
+            lam0 = max(1e-6, xr / 6.0)       # fallback ragionevole
+
+        p0 = (A0, d0_0, lam0, c0)
+
+        # fit non lineare (con pesi opzionali)
+        try:
+            popt, _ = curve_fit(func, x, y, p0=p0, bounds=bounds,
+                                sigma=s, absolute_sigma=(s is not None), maxfev=20000)
+            A, d0, lam, c = popt
+            if not (np.isfinite(A) and np.isfinite(d0) and np.isfinite(lam) and np.isfinite(c) and lam > 0 and A >= 0):
+                good_fit = False
+        except Exception:
+            good_fit = False
+            popt = (0.0, 0.0, 0.0, c0)
+
+        lambda_mm = float(popt[2]) if good_fit else 0.0
+        # P(d=0)
+        P0 = float(func(0.0, *popt)) if good_fit else 0.0
+
+    # --- plotting ---
+    if plot:
+        xplot = np.copy(d); yplot = np.copy(P)
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        else:
+            fig = ax.get_figure()
+
+        use_cbar = None
+        if cmap:
+            try:
+                from scipy.stats import gaussian_kde
+                xy = np.vstack([xplot, yplot])
+                z = gaussian_kde(xy)(xy)
+                scatter = ax.scatter(xplot, yplot, c=z, s=1, edgecolor=edgecolor, linewidths=linewidths,
+                                     cmap=cmap, label=label_meas, alpha=0.7, zorder=1)
+                use_cbar = plt.colorbar(scatter, ax=ax, shrink=0.5)
+                use_cbar.set_label(r'density', fontsize=DIM)
+                use_cbar.ax.tick_params(labelsize=DIM)
+            except Exception:
+                ax.scatter(xplot, yplot, c=color, s=1, edgecolor=edgecolor, linewidths=linewidths,
+                           label=label_meas, alpha=0.7, zorder=1)
+        else:
+            ax.scatter(xplot, yplot, c=color, s=1, edgecolor=edgecolor, linewidths=linewidths,
+                       label=label_meas, alpha=0.7, zorder=1)
+
+        order = np.argsort(xplot)
+        if good_fit:
+            modeled_y = func(xplot[order], *popt)
+            curve_col = '#0B62A9'
+        else:
+            modeled_y = np.zeros_like(xplot[order])
+            curve_col = '#666666'
+
+        ax.plot(xplot[order], modeled_y, '-', color=curve_col, lw=8, label=label_curve, zorder=2)
+
+        ax.set_ylabel(ylabel, fontsize=DIM)
+        ax.set_xlabel('distance (mm)', fontsize=DIM)
+        if ymax is not None:
+            ax.set_ylim(0, ymax)
+        if xmax is not None:
+            ax.set_xlim(-0.2, xmax)
+            ax.set_xticks(np.arange(0, xmax, 2))
+
+        ax.legend(fontsize=DIM, ncol=1, loc='upper center', bbox_to_anchor=(0.5, 1.6),
+                  labelspacing=0.4, handletextpad=0.8, handlelength=1., frameon=False)
+
+        try:
+            pl.set_format(ax, axis_ticks='both', cbar=use_cbar if cmap else None, DIM=DIM)
+        except Exception:
+            pass
+
+        if ax is None:
+            if outf:
+                ax.savefig(outf, bbox_inches='tight')
+                if not show_plot:
+                    plt.close()
+            else:
+                plt.show()
+
+    return float(lambda_mm), P0, popt  # popt = (A, d0, lambda, c)
         
