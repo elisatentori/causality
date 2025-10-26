@@ -37,13 +37,13 @@ Code supporting <a href="https://www.biorxiv.org/content/10.1101/2025.04.29.6513
 ## utils
 
 <ul>
-  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/load_data.py" target="_blank"> load_data.py</a>: load HD-MEA channels map and spike-trains from Matlab structure (<a href="https://github.com/elisatentori/causality/tree/main/Data_MaxOne/Culture1REC1/Data" target="_blank"> Data_MaxOne/Culture1REC1/Data </a>) </li>
-  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/spikeDataProcessor.py" target="_blank"> spikeDataProcessor.py</a>: class to manage recorded spike-trains from both spontaneous and evoked activity.</li>
-  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/interventional.py" target="_blank"> interventional.py</a>: compute Interventional Connectivity between stimulating-recording channels pairs (see our paper for details) </li>
-  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/load_EC.py" target="_blank"> load_EC.py</a>: load EC results, previously computed via <a href="https://github.com/elisatentori/EC_calculation" target="_blank"> EC_calculation</a> </li>
-  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/distance.py" target="_blank"> distance.py</a>: correct EC and IC metrics for spatial dependence. </li>
-  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/network.py" target="_blank"> network.py</a>: compute the shortest-paths of effective networks using Dijkstra's algorithm (networkx package) </li>
-  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/plot.py" target="_blank"> plot.py</a>: library to visualize results</li>
+  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/load_data.py" target="_blank"> utils/load_data.py</a>: load HD-MEA channels map and spike-trains from Matlab structure (<a href="https://github.com/elisatentori/causality/tree/main/Data_MaxOne/Culture1REC1/Data" target="_blank"> Data_MaxOne/Culture1REC1/Data </a>) </li>
+  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/spikeDataProcessor.py" target="_blank"> utils/spikeDataProcessor.py</a>: class to manage recorded spike-trains from both spontaneous and evoked activity.</li>
+  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/interventional.py" target="_blank"> utils/interventional.py</a>: compute Interventional Connectivity between stimulating-recording channels pairs (see our paper for details) </li>
+  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/load_EC.py" target="_blank"> utils/load_EC.py</a>: load EC results, previously computed via <a href="https://github.com/elisatentori/EC_calculation" target="_blank"> EC_calculation</a> </li>
+  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/distance.py" target="_blank"> utils/distance.py</a>: correct EC and IC metrics for spatial dependence. </li>
+  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/network.py" target="_blank"> utils/network.py</a>: compute the shortest-paths of effective networks using Dijkstra's algorithm (networkx package) </li>
+  <li> <a href="https://github.com/elisatentori/causality/blob/main/utils/plot.py" target="_blank"> utils/plot.py</a>: library to visualize results</li>
 </ul>
 
 ## Results
