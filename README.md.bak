@@ -28,7 +28,7 @@ Code supporting <a href="https://www.biorxiv.org/content/10.1101/2025.04.29.6513
   </li>
 </ul>
 
-## Dependencies fro EC calculation
+## Dependency for EC calculation
 <ul>
 <li><a href="https://github.com/elisatentori/EC_calculation" target="_blank"> EC_calculation</a>: <br>
   computing Effective Connectivity metrics (Delayed Transfer Entropy, Signed-Cross Correlation, Cross-Covariance) from spike-trains. Performing significance jittering test. </li>
@@ -49,10 +49,14 @@ Code supporting <a href="https://www.biorxiv.org/content/10.1101/2025.04.29.6513
 
 ## Results
 
-Stored in <a href="https://github.com/elisatentori/causality/tree/main/Data_MaxOne/Culture1REC1" target="_blank"> Data_MaxOne/Culture1REC1 </a> and <a href="https://github.com/elisatentori/causality/tree/main/Data_MaxOne/Culture2REC1" target="_blank"> Data_MaxOne/Culture2REC1 </a> subfolders.
+<ul>
+  <li> Data and results from EC/IC computation are stored in <a href="https://github.com/elisatentori/causality/tree/main/Data_MaxOne/Culture1REC1" target="_blank"> Data_MaxOne/Culture1REC1 </a> and <a href="https://github.com/elisatentori/causality/tree/main/Data_MaxOne/Culture2REC1" target="_blank"> Data_MaxOne/Culture2REC1 </a> subfolders.
+
+  <li> Analyses and plots are stored in <a href="https://github.com/elisatentori/causality/tree/main/imgs" target="_blank"> imgs </a> and <a href="https://github.com/elisatentori/causality/tree/main/imgs2  target="_blank"> imgs2 </a> subfolders.
+
+</ul>
 
 ## python dependencies
-
 numpy, matplotlib, scipy, sklearn, statsmodels, joblib, networkx, seaborn
 
 
