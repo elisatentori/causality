@@ -581,7 +581,7 @@ def plot_mat(mat, title=None, xlabel='target', ylabel='source', cmap='viridis', 
 
 def plot_scatter(ic_mat, ec_mat, zeroExp=-11, log=False, xlabel='IC', ylabel='EC', title=None, dotsize=0.1, 
                  cmap=None, edgecolor=None, linewidths=0.2, regcolor='tab:red', dotcolor='tab:blue', reg_line=True, show_corr=True,
-                 ymin=None, ymax=None, ax=None, outf=None, show_plot=False):
+                 xmin=None, xmax=None, ymin=None, ymax=None, ax=None, outf=None, show_plot=False):
     import seaborn as sns
     from scipy.stats import pearsonr, spearmanr, gaussian_kde
     ic_vec = ic_mat.flatten()
@@ -633,8 +633,10 @@ def plot_scatter(ic_mat, ec_mat, zeroExp=-11, log=False, xlabel='IC', ylabel='EC
         if title:
             ax.set_title(title)
         
-    #if ymin is not None and ymax is not None:
-    #    ax.set_ylim(ymin,ymax)
+    if ymin is not None and ymax is not None:
+        ax.set_ylim(ymin,ymax)
+    if xmin is not None and xmax is not None:
+        ax.set_ylim(xmin,xmax)
         
     ax.set_xlabel(xlabel); ax.set_ylabel(ylabel);
 
