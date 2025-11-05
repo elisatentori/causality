@@ -96,15 +96,42 @@ def diff_counts(pre_counts: np.ndarray, post_counts: np.ndarray):
     return diff, np.nan
 
 
-def compute_KS(Ntrials, def_units, def_chans, def_spikes, channel,
+def compute_KS(Ntrials, stim_units, stim_chans, spikes_times, rec_channels,
                stim_start, Delta_pre, stim_stop, Delta_post, Tmax,
                alpha_th=0.05, id_trial_start=0, n_jobs=1, verbose=False):
+    
+    ''' 
+    Compute KS statistics trials spike counts (NO concatenated bins over trials).
+    KS test is applied to flattened vectors of spike-count for each trial.
+    
+    Args:
+        Ntrials (int):                Number of trials per stimulation unit.
+        stim_units (Sequence[int]):   IDs of stimulation units.
+        stim_chans (Array[int]):      IDs of stimulation channels.
+        spikes_times ( Dict[int, Dict[int, Dict[int, np.ndarray]]] ):
+                                      Mapping: unit ID -> trial dicts -> rec channel ID -> spike-time arrays.
+        rec_channels (Sequence[int]): IDs of recording channels.
+        stim_start (float):           Stimulation onset time.
+        stim_stop (float):            Stimulation offset time.
+        Tmax (float):                 Duration of each analysis window.
+        Delta_pre (float):            Offset before stim_start for pre-window.
+        Delta_post (float):           Offset after stim_stop for post-window.
+        alpha_th (float):             threshold for p-value
+        id_trial_start (int):         if you want to exclude some initial trials change from id_trial_start=0
+        n_jobs (int) [default 1] :    N. jobs for joblib
+        verbose (bool):               If True, print progress messages.
+    Returns:
+        KS         : raw KS statistics
+        KS_sign    : significant KS values after thresholding
+        KS_pval_FDR: p-values after FDR correction
+        KS_pval    : raw p-values
+    '''
     
     if verbose:
         print('\nComputing time-indep. KOLMOGOROV-SMIRNOV....')
 
-    n_units = len(def_units)
-    n_chans = len(channel)
+    n_units = len(stim_units)
+    n_chans = len(rec_channels)
     ntrials_used = Ntrials - id_trial_start
 
     # Pre-allocate spike count arrays
@@ -112,10 +139,10 @@ def compute_KS(Ntrials, def_units, def_chans, def_spikes, channel,
     count_post = np.zeros((n_units, n_chans, ntrials_used))
 
     # === Fill pre and post spike counts ===
-    for i_unit, unitID in enumerate(def_units):
-        for j_chan, ch in enumerate(channel):
+    for i_unit, unitID in enumerate(stim_units):
+        for j_chan, ch in enumerate(rec_channels):
             for k_trial, i_trial in enumerate(range(id_trial_start, Ntrials)):
-                spikes = def_spikes[unitID].get(i_trial, {}).get(ch, np.array([]))
+                spikes = spikes_times[unitID].get(i_trial, {}).get(ch, np.array([]))
 
                 pre_mask  = (spikes >= stim_start - Delta_pre - Tmax) & (spikes < stim_start - Delta_pre)
                 post_mask = (spikes >  stim_stop + Delta_post) & (spikes <= stim_stop + Delta_post + Tmax)
@@ -164,7 +191,11 @@ def compute_KS(Ntrials, def_units, def_chans, def_spikes, channel,
 
 #------------------------------------------------------------------------------------------------------#
 
-def compute_KS_binned(Ntrials, def_units, def_chans, def_spikes, channel,
+    (Ntrials, stim_units, stim_chans, spikes_times, rec_channels,
+               stim_start, Delta_pre, stim_stop, Delta_post, Tmax,
+               alpha_th=0.05, id_trial_start=0, n_jobs=1, verbose=False):
+
+def compute_KS_binned(Ntrials, stim_units, stim_chans, spikes_times, rec_channels,
                       stim_start, Delta_pre, stim_stop, Delta_post, Tmax,
                       Nbins=10, alpha_th=0.05, id_trial_start=0, n_jobs=1, verbose=False):
     """
@@ -172,18 +203,37 @@ def compute_KS_binned(Ntrials, def_units, def_chans, def_spikes, channel,
 
     Each pre/post trial window is divided into Nbins bins of duration Tmax/Nbins.
     KS test is applied to flattened bin vectors.
+    
+    Args:
+        Ntrials (int):                Number of trials per stimulation unit.
+        stim_units (Sequence[int]):   IDs of stimulation units.
+        stim_chans (Array[int]):      IDs of stimulation channels.
+        spikes_times ( Dict[int, Dict[int, Dict[int, np.ndarray]]] ):
+                                      Mapping: unit ID -> trial dicts -> rec channel ID -> spike-time arrays.
+        rec_channels (Sequence[int]): IDs of recording channels.
+        stim_start (float):           Stimulation onset time.
+        stim_stop (float):            Stimulation offset time.
+        Tmax (float):                 Duration of each analysis window.
+        Delta_pre (float):            Offset before stim_start for pre-window.
+        Delta_post (float):           Offset after stim_stop for post-window.
+        Nbins (int):                  Each pre/post trial window (duration Tmax) is divided into Nbins bins
+        alpha_th (float):             threshold for p-value
+        id_trial_start (int):         if you want to exclude some initial trials change from id_trial_start=0
+        n_jobs (int) [default 1] :    N. jobs for joblib
+        verbose (bool):               If True, print progress messages.
 
     Returns:
         KS         : raw KS statistics
         KS_sign    : significant KS values after thresholding
         KS_pval_FDR: p-values after FDR correction
         KS_pval    : raw p-values
+        
     """
     if verbose:
         print(f'\nComputing binned KS with Nbins = {Nbins}...')
 
-    n_units = len(def_units)
-    n_chans = len(channel)
+    n_units = len(stim_units)
+    n_chans = len(rec_channels)
     ntrials_used = Ntrials - id_trial_start
     bin_edges = np.linspace(0, Tmax, Nbins + 1)
 
@@ -195,10 +245,10 @@ def compute_KS_binned(Ntrials, def_units, def_chans, def_spikes, channel,
     count_pre  = np.zeros((n_units, n_chans, ntrials_used, Nbins))
     count_post = np.zeros((n_units, n_chans, ntrials_used, Nbins))
 
-    for i_unit, unitID in enumerate(def_units):
-        for j_chan, ch in enumerate(channel):
+    for i_unit, unitID in enumerate(stim_units):
+        for j_chan, ch in enumerate(rec_channels):
             for k_trial, i_trial in enumerate(range(id_trial_start, Ntrials)):
-                spikes = def_spikes[unitID].get(i_trial, {}).get(ch, np.array([]))
+                spikes = spikes_times[unitID].get(i_trial, {}).get(ch, np.array([]))
                 
                 # Select and bin pre spikes
                 pre_start = stim_start - Delta_pre - Tmax
