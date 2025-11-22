@@ -191,10 +191,6 @@ def compute_KS(Ntrials, stim_units, stim_chans, spikes_times, rec_channels,
 
 #------------------------------------------------------------------------------------------------------#
 
-    (Ntrials, stim_units, stim_chans, spikes_times, rec_channels,
-               stim_start, Delta_pre, stim_stop, Delta_post, Tmax,
-               alpha_th=0.05, id_trial_start=0, n_jobs=1, verbose=False):
-
 def compute_KS_binned(Ntrials, stim_units, stim_chans, spikes_times, rec_channels,
                       stim_start, Delta_pre, stim_stop, Delta_post, Tmax,
                       Nbins=10, alpha_th=0.05, id_trial_start=0, n_jobs=1, verbose=False):
