@@ -2,14 +2,13 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from scipy.optimize import curve_fit
-from scipy.stats import zscore, gaussian_kde
 from matplotlib.ticker import ScalarFormatter
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+from scipy.optimize import curve_fit
+from scipy.stats import zscore, gaussian_kde, spearmanr, pearsonr
 from sklearn.metrics import r2_score
 from sklearn.linear_model import LinearRegression
-
-from scipy.stats import spearmanr, pearsonr
 
 from . import plot as pl
 
@@ -67,14 +66,22 @@ def remove_outliers_quantiles(x, y, q=0.01):
     mask = (x >= xq_low) & (x <= xq_high) & (y >= yq_low) & (y <= yq_high)
     return x[mask], y[mask]
 
-def fit_and_plot(x, y, fit_type="exp", rm_quantiles=True, q=0.02, z_thresh=5, xlabel='eucl. distance (mm)', ylabel='TE',
+def fit_and_plot(x, y, fit_type="exp", rm_quantiles=False, use_iqr=True, q=0.02, k=1.5, z_thresh=5, xlabel='eucl. distance (mm)', ylabel='TE',
                  cmap=None, edgecolor=None, linewidths=0.2, dotsize=10, dotcolor='tab:blue', plot=True, ax=None, 
                  outf : str = None, show_plot = True):
 
     # clean data from outliers
-    if rm_quantiles:
+    if rm_quantiles==True and use_iqr==False:
         x_clean, y_clean = remove_outliers_quantiles(x, y, q=q)
+    elif use_iqr==True:
+        if rm_quantiles==True:
+            print('both rm_quantiles and use_iqr are True. Choosing use_iqr option by default.')
+        mask_x = iqr_filter(x, k)
+        mask_y = iqr_filter(y, k)
+        mask = mask_x & mask_y
+        x_clean, y_clean = x[mask], y[mask]
     else:
+        print('both rm_quantiles and use_iqr are False. Choosing z-scoring option to remove outliers.')
         x_clean, y_clean = remove_outliers(x, y, z_thresh=z_thresh)
 
     def compute_aic_bic(y_true, y_pred, num_params):
