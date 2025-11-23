@@ -2,25 +2,18 @@
 .ipynb_checkpoints
 __pycache__/
 *.pyc
-
-git rm -r --cached raster1.ipynb
-git rm -r --cached raster2.ipynb
-
-git rm -r --cached imgsRaster
-git rm -r --cached imgsRaster2
-
+raster1.ipynb
+raster2.ipynb
+imgsRaster/
+imgsRaster2/
 git rm -r --cached results1.ipynb
 git rm -r --cached results2.ipynb
-
 git rm -r --cached imgs
 git rm -r --cached imgs2
-
-git rm -r --cached summary1.ipynb
-git rm -r --cached summary2.ipynb
-
-git rm -r --cached summ
-git rm -r --cached summ2
-
+summary1.ipynb
+summary2.ipynb
+summ/
+summ2/
 git rm -r --cached net_gen
 
 
