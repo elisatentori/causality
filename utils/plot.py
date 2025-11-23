@@ -437,9 +437,8 @@ def plot_perturbome(mat, map_coords, channel, indices, label='IC', stim_id=0, vm
 
 
 def plot_perturbome2(mat, map_coords, channel, indices, label='IC', stim_id=0, vmin=0, vmax=1, cmap='cool', log=False, 
-             star_color='tab:red', DIM=40, dotsize=22, starsize=1800, figsize=(20,11), ax=None, outf: str = None, show_plot=False):
-
-    import matplotlib.patheffects as pe
+                     rec_color='lightgrey', edgecolor='white', linewidths=0.04, star_color='tab:red', 
+                     DIM=40, dotsize=22, starsize=1800, figsize=(20,11), ax=None, outf: str = None, show_plot=False):
     
     ch  = channel[indices[stim_id]]
 
@@ -449,7 +448,8 @@ def plot_perturbome2(mat, map_coords, channel, indices, label='IC', stim_id=0, v
         fig = ax.get_figure()
     
     # map of recording channels as a background
-    ax.scatter(map_coords[:,0], map_coords[:,1], s=dotsize/2, lw=0.4, marker='s', c='lightgrey', edgecolor='white', zorder=0)
+    ax.scatter(map_coords[:,0], map_coords[:,1], s=dotsize/2, marker='s', c=rec_color, edgecolor=edgecolor, linewidths=linewidths,
+               zorder=0)
     
     # scatter significant connections
     idxs = np.where(mat[stim_id, :] != 0)[0]
@@ -460,17 +460,13 @@ def plot_perturbome2(mat, map_coords, channel, indices, label='IC', stim_id=0, v
     values = np.nan_to_num(values, nan=0.0, posinf=1.0, neginf=0.0)
     values = np.clip(values, vmin, vmax)
     
-    scatter = ax.scatter(map_coords[idxs, 0], map_coords[idxs, 1], s=dotsize, marker='s', c=values, linewidths=0.1,
-                        edgecolor='white', cmap=cmap, vmin=vmin, vmax=vmax, zorder=1)
+    scatter = ax.scatter(map_coords[idxs, 0], map_coords[idxs, 1], s=dotsize, marker='s', c=values, linewidths=linewidths,
+                        edgecolor=edgecolor, cmap=cmap, vmin=vmin, vmax=vmax, zorder=1)
 
     # stim. channel
     ax.scatter(map_coords[channel==ch,0], map_coords[channel==ch,1], c='none', edgecolor='white',   linewidths=4.5, s=starsize, marker='*', zorder=2)
     ax.scatter(map_coords[channel==ch,0], map_coords[channel==ch,1], c='none', edgecolor=star_color, linewidths=2.5, s=starsize, marker='*', 
                label = f'stim. channel {indices[stim_id]}', zorder=3)
-    #dx, dy = 10.5/1000, 40/1000
-    #txt = ax.text(map_coords[channel==ch,0]+dx, map_coords[channel==ch,1]+dy, str(indices[stim_id]), 
-    #              fontdict=dict(color='black', alpha=1, size=DIM), zorder=3)
-    #txt.set_path_effects([ pe.Stroke(linewidth=10, foreground='white'), pe.Normal() ])
 
     # labels
     ax.set_xlabel('x  (mm)',fontsize=DIM)
@@ -480,14 +476,18 @@ def plot_perturbome2(mat, map_coords, channel, indices, label='IC', stim_id=0, v
     cbar.set_label(label=label, fontsize=DIM) 
     cbar.ax.tick_params(labelsize=DIM)
     
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.4), ncol=1, fontsize=DIM, frameon=False)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.4), ncol=1, labelspacing=0.4, handletextpad=0.8, handlelength=1., frameon=False,
+              fontsize=DIM)
     
     set_format(ax=ax, pwr_x_min=-3, pwr_x_max=3, pwr_y_min=-2, pwr_y_max=2, axis_ticks = 'both', cbar = cbar, DIM = DIM)
+    
+    fig.set_facecolor('none')
     
     if outf is not None:
         plt.savefig(outf, bbox_inches='tight')
         if not show_plot:
             plt.close()
+            
 
             
 #=================================================================================================#
