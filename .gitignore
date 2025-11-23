@@ -21,6 +21,8 @@ git rm -r --cached summary2.ipynb
 git rm -r --cached summ
 git rm -r --cached summ2
 
+git rm -r --cached net_gen
+
 
 
 
