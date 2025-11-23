@@ -6,15 +6,18 @@ raster1.ipynb
 raster2.ipynb
 imgsRaster/
 imgsRaster2/
-git rm -r --cached results1.ipynb
-git rm -r --cached results2.ipynb
-git rm -r --cached imgs
-git rm -r --cached imgs2
+results1.ipynb
+results2.ipynb
+imgs/
+imgs2/
 summary1.ipynb
 summary2.ipynb
 summ/
 summ2/
-git rm -r --cached net_gen
+net_gen/
+computeSP_job.sh
+compute_SP.py
+config_EC.txt
 
 
 
