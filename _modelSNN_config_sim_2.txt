@@ -1,4 +1,0 @@
-ArrayTaskID	BETA_E	tau_R
-
-1	0.1	500.0
-
