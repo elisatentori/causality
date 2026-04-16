@@ -17,27 +17,6 @@ import numpy as np
 #import correlations as cc
 
 #=================================================================================================#
-from matplotlib import font_manager, rcParams
-font_file = "/home/tentori/.local/avenir_ff/AvenirLTStd-Roman.otf"
-font_file_b = "/home/tentori/.local/avenir_ff/AvenirLTStd-Black.otf"
-font_file_c = "/home/tentori/.local/avenir_ff/AvenirLTStd-Book.otf"
-font_manager.fontManager.addfont(font_file)
-font_manager.fontManager.addfont(font_file_b)
-font_manager.fontManager.addfont(font_file_c)
-
-# predef font: Avenir
-rcParams['font.family'] = "Avenir LT Std"
-
-DIM = 25
-
-plt.rcParams.update({
-    'font.size': DIM,
-    'axes.labelsize': DIM,
-    'axes.titlesize': DIM,
-    'xtick.labelsize': DIM,
-    'ytick.labelsize': DIM
-})
-#=================================================================================================#
 
 import os
 def Set_Dir_Plots(path):
@@ -85,25 +64,29 @@ def get_color_gradient(idx_meas, num_colors, base_color):
 #=================================================================================================#
 # Axes formatter for plots 
 
-def set_format(ax, axis_ticks = 'both', pwr_x_min=-1, pwr_x_max=1, pwr_y_min=-1, pwr_y_max=1,  cbar = None, pwr_cbar_min=-1, pwr_cbar_max=1,  DIM = 30):
-    
+def set_format(ax, axis_ticks = 'both', pwr_x_min=-2, pwr_x_max=2, pwr_y_min=-2, pwr_y_max=2,  cbar = None, pwr_cbar_min=-1, pwr_cbar_max=1,  
+               dx_cbar = 0.8, dy_cbar = 0.3, dx= 15/72, dy = 15/72, DIM = None):
+
     import seaborn as sns
     
     sns.despine(ax=ax, trim=False)
     ax.set_facecolor('none')
     
     # - - -  TICKS
-    ax.tick_params(axis=axis_ticks, which='major', labelsize=DIM)
+    if DIM is not None:
+        ax.tick_params(axis=axis_ticks, which='major', labelsize=DIM)
+    else:
+        ax.tick_params(axis=axis_ticks, which='major')
     
     # - - -  FORMATTER x axis
     formatter_x = ScalarFormatter(useMathText=True)   
     formatter_x.set_scientific(True)
     formatter_x.set_powerlimits((pwr_x_min, pwr_x_max))
     ax.xaxis.set_major_formatter(formatter_x)
-    ax.xaxis.offsetText.set_fontsize(DIM-10)
+    if DIM is not None:
+        ax.xaxis.offsetText.set_fontsize(DIM)
     
     from matplotlib.transforms import ScaledTranslation
-    dx, dy = 15/72, 15/72
     offset = ScaledTranslation(dx, dy, ax.figure.dpi_scale_trans)
     ax.xaxis.offsetText.set_transform(ax.xaxis.offsetText.get_transform() + offset)
 
@@ -112,7 +95,8 @@ def set_format(ax, axis_ticks = 'both', pwr_x_min=-1, pwr_x_max=1, pwr_y_min=-1,
     formatter_y.set_scientific(True) 
     formatter_y.set_powerlimits((pwr_y_min, pwr_y_max))
     ax.yaxis.set_major_formatter(formatter_y);
-    ax.yaxis.offsetText.set_fontsize(DIM-10)
+    if DIM is not None:
+        ax.yaxis.offsetText.set_fontsize(DIM)
     
     if cbar:
         # - - -  FORMATTER cbar
@@ -120,16 +104,16 @@ def set_format(ax, axis_ticks = 'both', pwr_x_min=-1, pwr_x_max=1, pwr_y_min=-1,
         formatter_cbar.set_scientific(True)
         formatter_cbar.set_powerlimits((pwr_cbar_min, pwr_cbar_max))
         cbar.ax.yaxis.set_major_formatter(formatter_cbar); 
-        cbar.ax.yaxis.offsetText.set_fontsize(DIM-10)
         cbar.ax.xaxis.set_major_formatter(formatter_cbar); 
-        cbar.ax.xaxis.offsetText.set_fontsize(DIM-10)
+        if DIM is not None:
+            cbar.ax.yaxis.offsetText.set_fontsize(DIM)
+            cbar.ax.xaxis.offsetText.set_fontsize(DIM)
 
         cbar.formatter = formatter_cbar
         cbar.update_ticks()
         
         # Move the offset text to the top of the colorbar
-        dx, dy = 0.8, 0.3  # Adjust dy for vertical and dx for horizontal shifts
-        cbar_offset = ScaledTranslation(dx, dy, cbar.ax.figure.dpi_scale_trans)
+        cbar_offset = ScaledTranslation(dx_cbar, dy_cbar, cbar.ax.figure.dpi_scale_trans)
         cbar.ax.yaxis.offsetText.set_transform(cbar.ax.yaxis.offsetText.get_transform() + cbar_offset)
         
 

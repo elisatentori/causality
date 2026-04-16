@@ -15,7 +15,7 @@ from utils_izhi import topology as tp
 from utils_izhi import izhikevic as iz
 #------------------------------------------------------------#
 # snn
-from snn import channels as ut
+from utils_snn import channels as ut
 #------------------------------------------------------------#
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -108,15 +108,17 @@ rcParams['font.family']  = "Avenir LT Std"
 rcParams['pdf.fonttype'] = 42
 rcParams['ps.fonttype']  = 42
 #------------------------------------------------------------#
-DIM = 25
-plt.rcParams.update({'font.size': DIM,'axes.labelsize': DIM,'axes.titlesize': DIM,'xtick.labelsize': DIM,'ytick.labelsize': DIM})
+DIM = 20
+plt.rcParams.update({'font.size': DIM,'axes.labelsize': DIM,'axes.titlesize': DIM,'xtick.labelsize': DIM-6,'ytick.labelsize': DIM-6,
+                   'legend.fontsize' : DIM-5})
+print('fontsize:',plt.rcParams['font.size'],'\ntitlesize:', plt.rcParams['axes.titlesize'], '\nlabelsize:',plt.rcParams['xtick.labelsize'], plt.rcParams['ytick.labelsize'])
 #=================================================================================================#
 # Colors
 colorz    = ['#255D93','#5FA6D6','#B02106','#F24D33','#2C2C2C','#787878']
 coldhot_cmap   = maps.create_cmaphot()
 coldhot_cmap_r = maps.create_cmaphot_r()
 #------------------------------------------------------------#
-show_plot   = True
+show_plot   = False
 #------------------------------------------------------------#
 from cmap import Colormap
 def Cmap(cmap):
@@ -667,7 +669,7 @@ ax.scatter(P0_ks_sign[cond], P0_W[cond], s=100); ax.set_xlabel(r'$P_0$$_{IC}$');
 ax = axs[2]
 ax.scatter(sigOverBackg_ks_sign[cond], sigOverBackg_W[cond], s=100); ax.set_xlabel(r'$a_{IC}$'); ax.set_ylabel(r'$a_{W}$'); ax.set_title('signal-over-background')
 for ax in axs:
-    pl.set_format(ax=ax, DIM=DIM)
+    pl.set_format(ax=ax)
 fig.subplots_adjust(wspace=0.5, hspace=0.5)
 plt.savefig(path_imgs + f'7.2__decayLength_IC_W.png', bbox_inches='tight')
 plt.close()
@@ -680,7 +682,7 @@ ax.scatter(P0_ks_sign_bin[cond], P0_W[cond], s=100); ax.set_xlabel(r'$P_0$$_{IC_
 ax = axs[2]
 ax.scatter(sigOverBackg_ks_sign_bin[cond], sigOverBackg_W[cond], s=100); ax.set_xlabel(r'$a_{IC_{bin}}$'); ax.set_ylabel(r'$a_{W}$'); ax.set_title('signal-over-background')
 for ax in axs:
-    pl.set_format(ax=ax, DIM=DIM)
+    pl.set_format(ax=ax)
 fig.subplots_adjust(wspace=0.5, hspace=0.5)
 plt.savefig(path_imgs + f'7.2__decayLength_ICbin_W.png', bbox_inches='tight')
 plt.close()

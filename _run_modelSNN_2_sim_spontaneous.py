@@ -13,7 +13,7 @@ from utils_izhi import topology as tp
 from utils_izhi import izhikevic as iz
 #------------------------------------------------------------#
 # snn
-from snn import channels as ut
+from utils_snn import channels as ut
 #------------------------------------------------------------#
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -35,15 +35,17 @@ rcParams['font.family']  = "Avenir LT Std"
 rcParams['pdf.fonttype'] = 42
 rcParams['ps.fonttype']  = 42
 #------------------------------------------------------------#
-DIM = 25
-plt.rcParams.update({'font.size': DIM,'axes.labelsize': DIM,'axes.titlesize': DIM,'xtick.labelsize': DIM,'ytick.labelsize': DIM})
+DIM = 20
+plt.rcParams.update({'font.size': DIM,'axes.labelsize': DIM,'axes.titlesize': DIM,'xtick.labelsize': DIM-6,'ytick.labelsize': DIM-6,
+                   'legend.fontsize' : DIM-5})
+print('fontsize:',plt.rcParams['font.size'],'\ntitlesize:', plt.rcParams['axes.titlesize'], '\nlabelsize:',plt.rcParams['xtick.labelsize'], plt.rcParams['ytick.labelsize'])
 #=================================================================================================#
 # Colors
 colorz    = ['#255D93','#5FA6D6','#B02106','#F24D33','#2C2C2C','#787878']
 coldhot_cmap   = maps.create_cmaphot()
 coldhot_cmap_r = maps.create_cmaphot_r()
 #------------------------------------------------------------#
-show_plot   = True
+show_plot   = False
 #------------------------------------------------------------#
 from cmap import Colormap
 def Cmap(cmap):
@@ -337,7 +339,7 @@ h=ax.hist(rates[net['ntypes']==1], 40, [0, np.max(rates)], histtype='step', colo
 ax.set_xlabel('rate (Hz)')
 ax.set_ylabel('count')
 ax.legend(ncol=1, loc='upper center', bbox_to_anchor=(0.5, 1.45), labelspacing=0.4, handletextpad=0.8, handlelength = 1., frameon=False) 
-pl.set_format(ax=ax, DIM = DIM, pwr_x_max=3,pwr_x_min=-2, pwr_y_max=2, pwr_y_min=-2)
+pl.set_format(ax=ax, pwr_x_max=3,pwr_x_min=-2, pwr_y_max=2, pwr_y_min=-2)
 plt.savefig(path_imgs + 'spontaneous_rates.png', bbox_inches='tight')
 if show_plot==False:
     plt.close()
@@ -358,7 +360,7 @@ ax.plot(t[t<10], pop_activity[t<10], color='grey' )
 ax.set_xlabel('time (s)')
 ax.set_ylabel('count')
 ax.set_title('population activity')
-pl.set_format(ax=ax, DIM = DIM, pwr_x_max=3,pwr_x_min=-2, pwr_y_max=2, pwr_y_min=-2)
+pl.set_format(ax=ax, pwr_x_max=3,pwr_x_min=-2, pwr_y_max=2, pwr_y_min=-2)
 plt.savefig(path_imgs + 'spontaneous_pop_activity.png', bbox_inches='tight')
 if show_plot==False:
     plt.close()
@@ -386,7 +388,7 @@ if modules=='2':
     ax.set_xlabel('time (s)')
     ax.set_ylabel('count')
     ax.set_title('modules population activity')
-    pl.set_format(ax=ax, DIM = DIM, pwr_x_max=3,pwr_x_min=-2, pwr_y_max=2, pwr_y_min=-2)
+    pl.set_format(ax=ax, pwr_x_max=3,pwr_x_min=-2, pwr_y_max=2, pwr_y_min=-2)
     ax.legend(ncol=2)
     plt.savefig(path_imgs + 'spontaneous_pop_activity_modules.png', bbox_inches='tight')
     if show_plot==False:
@@ -452,8 +454,6 @@ SP_I, H_I = nt.find_SP(np.abs(mat), indices, dist_mat=False, return_hops=True,
 
 
 
-
-
 #================================================================================================================#
 #                                   5) PLOTS ON CONNECTIVITY STATISTICS
 #================================================================================================================#
@@ -472,7 +472,7 @@ ax.hist(W_eff[W_eff<0], len(W_eff)//4, [-W_max,W_max], color='tab:blue', density
 ax.set_xlabel('weight (mV)')
 ax.set_ylabel('count')
 ax.legend(ncol=1, loc='upper center', bbox_to_anchor=(0.5, 1.45), labelspacing=0.4, handletextpad=0.8, handlelength = 1., frameon=False) 
-pl.set_format(ax=ax, DIM = DIM, pwr_x_max=2, pwr_y_max=2, pwr_y_min=-2)
+pl.set_format(ax=ax, pwr_x_max=2, pwr_y_max=2, pwr_y_min=-2)
 #===   Adjacency matrix   ===#
 ax=axs[1]
 im = ax.imshow(W_eff,cmap=coldhot_cmap_r, vmin=-np.max(np.abs(W_eff.flatten()))/3, vmax=np.max(np.abs(W_eff.flatten()))/3 )
@@ -508,7 +508,7 @@ hmax=np.max([np.max(inDeg),np.max(outDeg)])
 ax.hist(inDeg,  26, [-0.1,hmax], color='lightgrey', density=True, label='k$_{in}$')
 h = ax.hist(outDeg, 26, [-0.1,hmax], color='tab:blue', density=True, histtype='step', lw=3, label='k$_{out}$')
 ax.set_xlabel('degree'); ax.set_ylabel('pdf')
-pl.set_format(ax=ax, DIM = DIM, pwr_x_max=3, pwr_y_max=2, pwr_y_min=-2)
+pl.set_format(ax=ax,  pwr_x_max=3, pwr_y_max=2, pwr_y_min=-2)
 ax.legend(ncol=1, loc='upper center', bbox_to_anchor=(0.5, 1.65), labelspacing=0.4, handletextpad=0.8, handlelength = 1., frameon=False) 
 #=== strengths ===
 ax=axs[1]
@@ -516,7 +516,7 @@ hmax=np.max([np.max(inStr),np.max(outStr)])
 ax.hist(inStr,  26, [-hmax,hmax], color='lightgrey', density=True, label='in-strength')
 ax.hist(outStr, 26, [-hmax,hmax], color='tab:blue', density=True, histtype='step', lw=3, label='out-strength')
 ax.set_xlabel('strength'); ax.set_ylabel('pdf')
-pl.set_format(ax=ax, DIM = DIM, pwr_x_max=3, pwr_y_max=2, pwr_y_min=-2)
+pl.set_format(ax=ax, pwr_x_max=3, pwr_y_max=2, pwr_y_min=-2)
 ax.legend(ncol=1, loc='upper center', bbox_to_anchor=(0.5, 1.65), labelspacing=0.4, handletextpad=0.8, handlelength = 1., frameon=False) 
 fig.subplots_adjust(hspace=0.6, wspace=0.7)
 plt.savefig(path_imgs + 'connectivityEFF_strength.png', bbox_inches='tight')
